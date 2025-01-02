@@ -358,6 +358,12 @@ class Envs:
         return os.environ.get(name, default=default)
 
 
+def quote(s):
+    if isinstance(s, Path):
+        s = str(s)
+    return shlex.quote(s)
+
+
 class Prod:
     def __init__(self, modulefile, njobs=1, params=None):
         self.modulefile = Path(modulefile)
@@ -384,7 +390,7 @@ class Prod:
             "MAX_TS": MAX_TS,
             "environ": Envs(),
             "shutil": shutil,
-            "quote": shlex.quote,
+            "quote": quote,
             "params": self.params,
         }
         return globals
