@@ -26,10 +26,10 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 html_logo = "pyprod2.png"
-html_favicon = 'pyprod2.png'
+html_favicon = "pyprod2.png"
 html_context = {
-  'display_github': True,
-  'github_user': 'atsuoishimoto',
-  'github_repo': 'pyprod',
-  'github_version': 'main/docs/',
+    "display_github": True,
+    "github_user": "atsuoishimoto",
+    "github_repo": "pyprod",
+    "github_version": "main/docs/",
 }

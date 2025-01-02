@@ -8,6 +8,11 @@ BUILDFILES = [(BUILDDIR / p).with_suffix(".o") for p in SRCFILES]
 COMMON = "inc1.txt inc2.txt".split()
 
 
+@rule(DOC, depends=BUILDFILES)
+def build_app(target, *src):
+    run("cat", *src, ">", target)
+
+
 @rule(BUILDDIR)
 def build_dir(target):
     run("mkdir", target)
@@ -16,11 +21,6 @@ def build_dir(target):
 @rule(BUILDDIR / "%.o", depends=("%.txt", COMMON), uses=BUILDDIR)
 def build_c(target, src, *commons):
     run("cat", *commons, src, ">", target)
-
-
-@rule(DOC, depends=BUILDFILES)
-def build_app(target, *src):
-    run("cat", *src, ">", target)
 
 
 def clean():

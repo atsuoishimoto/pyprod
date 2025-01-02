@@ -6,7 +6,6 @@ PyProd is a Python script that can be used as an alternative to Makefile. By lev
 
 Features
 --------
-
 - Define build rules in Python: Use Python functions to create clear and concise build logic.
 - Specify dependencies for each rule: Automatically track and resolve dependencies between files, such as source files and headers.
 - Easily extendable with custom Python functions: Integrate custom logic for specialized tasks, like code linting or deployment.
@@ -14,7 +13,6 @@ Features
 
 Installation
 --------------
-
 To install PyProd, simply use pip:
 
 .. code-block:: sh
@@ -23,9 +21,7 @@ To install PyProd, simply use pip:
 
 Usage
 -----
-
-In PyProd, a traditional Makefile for C can be expressed as a Python script like this:
-
+With PyProd, a traditional Makefile for C can be expressed as a Python script like this:
 
 .. code-block:: python
 
@@ -47,6 +43,7 @@ In PyProd, a traditional Makefile for C can be expressed as a Python script like
 
     all = "hello.exe"
 
+
 To run the build script, simply execute:
 
 .. code-block:: sh
@@ -56,5 +53,4 @@ To run the build script, simply execute:
 
 License
 -------
-
 PyProd is licensed under the MIT License. See the `LICENSE <LICENSE>`_ file for more details.

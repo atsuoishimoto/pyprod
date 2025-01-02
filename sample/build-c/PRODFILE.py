@@ -12,11 +12,10 @@ OBJS = "hello.o main.o".split()
 def link(target, *src):
     run(CC, "-o", target, src)
 
+
 @rule("%.o", depends=("%.c", DEPS))
 def compile(target, src, *deps):
     run(CC, "-c -o", target, src, CFLAGS)
-
-
 
 
 def clean():
