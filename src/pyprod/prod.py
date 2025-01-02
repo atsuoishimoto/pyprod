@@ -211,6 +211,8 @@ class Rules:
                         stem = d
                     elif dep.pattern:
                         m = re.fullmatch(str(dep.pattern), name)
+                        if not m:
+                            continue
                         d = m.groupdict().get("stem", None)
                         if d is not None:
                             stem = d
