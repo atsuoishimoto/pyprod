@@ -52,7 +52,8 @@ def test_builder():
     def g():
         pass
 
-    deps, uses, _ = rules.select_builder("a")
+    _name, deps, uses, _ = rules.select_builder("a")
+    assert _name == "a"
     assert deps == ["b", "c"]
     assert uses == ["d"]
 
@@ -64,7 +65,7 @@ def test_stem():
     def f():
         pass
 
-    deps, _, _ = rules.select_builder("a.o")
+    _name, deps, _, _ = rules.select_builder("a.o")
     assert deps == ["a.c"]
 
 
@@ -75,7 +76,7 @@ def test_stem_wildcard():
     def f():
         pass
 
-    deps, _, _ = rules.select_builder("dir/dir2/a.o")
+    _, deps, _, _ = rules.select_builder("dir/dir2/a.o")
     assert deps == ["a.c"]
 
 
@@ -86,7 +87,7 @@ def test_stem_escape():
     def f():
         pass
 
-    deps, _, _ = rules.select_builder("a.%")
+    _, deps, _, _ = rules.select_builder("a.%")
     assert deps == ["a.%"]
 
 
@@ -106,5 +107,5 @@ def test_stem_error():
     def f():
         pass
 
-    deps, _, _ = rules.select_builder("abc.xxx")
+    _, deps, _, _ = rules.select_builder("abc.xxx")
     assert deps == ["abc.abc"]

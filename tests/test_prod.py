@@ -88,7 +88,7 @@ async def test_pattern(tmp_path):
     src = """
 @rule(target=("a.o", "b.o"), pattern=Path("%.o"), depends=Path("%.c"))
 def build(target, src):
-    assert isinstance(target, Path)
+    assert isinstance(target, str)
     Path(target).write_text(str(target))
 
 @rule(target=Path("%.c"))

@@ -154,16 +154,16 @@ class Rule:
     orig_uses: list = field(init=False)
 
     def __post_init__(self):
-        self.orig_targets = self.targets
-        self.orig_depends = self.depends
-        self.orig_uses = self.uses
+        self.orig_targets = list(flatten(self.targets))
+        self.orig_depends = list(flatten(self.depends))
+        self.orig_uses = list(flatten(self.uses))
 
-        self.targets = [rule_to_re(r) for r in flatten(self.targets)]
-        self.depends = list(flatten(self.depends))
+        self.targets = [rule_to_re(r) for r in self.orig_targets]
+        self.depends = self.orig_depends[:]
         if self.pattern:
             self.pattern = rule_to_re(self.pattern)
         if self.uses:
-            self.uses = list(flatten(self.uses))
+            self.uses = self.orig_uses[:]
 
     def __call__(self, f):
         self.builder = f
@@ -202,7 +202,7 @@ class Rules:
     def iter_rule(self, name):
         name = str(name)
         for dep in self.rules:
-            for target in dep.targets:
+            for target, orig_target in zip(dep.targets, dep.orig_targets):
                 m = re.fullmatch(str(target), name)
                 if m:
                     stem = None
@@ -212,6 +212,7 @@ class Rules:
                     elif dep.pattern:
                         m = re.fullmatch(str(dep.pattern), name)
                         if not m:
+                            print(name, dep.pattern)
                             continue
                         d = m.groupdict().get("stem", None)
                         if d is not None:
@@ -219,8 +220,11 @@ class Rules:
 
                     depends = [replace_pattern(r, stem) for r in dep.depends]
                     uses = [replace_pattern(r, stem) for r in dep.uses]
-
-                    yield depends, uses, dep
+                    if isinstance(orig_target, Path):
+                        _name = Path(name)
+                    else:
+                        _name = str(name)
+                    yield _name, depends, uses, dep
                     break
 
     def get_dep_names(self, name):
@@ -228,7 +232,7 @@ class Rules:
         ret_depends = []
         ret_uses = []
 
-        for depends, uses, dep in self.iter_rule(name):
+        for _name, depends, uses, dep in self.iter_rule(name):
             if dep.builder:
                 continue
 
@@ -249,10 +253,10 @@ class Rules:
                 return target
 
     def select_builder(self, name):
-        for depends, uses, dep in self.iter_rule(name):
+        for _name, depends, uses, dep in self.iter_rule(name):
             if not dep.builder:
                 continue
-            return depends, uses, dep
+            return _name, depends, uses, dep
 
     def build_tree(self, name, lv=1):
         self.frozen = True
@@ -269,7 +273,7 @@ class Rules:
 
             selected = self.select_builder(name)
             if selected:
-                build_deps, build_uses, _ = selected
+                _, build_deps, build_uses, _ = selected
                 depends.extend(build_deps)
                 depends.extend(build_uses)
 
@@ -390,7 +394,7 @@ class Prod:
             "MAX_TS": MAX_TS,
             "environ": Envs(),
             "shutil": shutil,
-            "quote": quote,
+            "quote": shlex.quote,
             "params": self.params,
         }
         return globals
@@ -511,7 +515,7 @@ class Prod:
         deps, uses = self.rules.get_dep_names(s_name)
         selected = self.rules.select_builder(s_name)
         if selected:
-            build_deps, build_uses, builder = selected
+            _name, build_deps, build_uses, builder = selected
             deps = deps + build_deps
             uses = uses + build_uses
 
@@ -534,7 +538,7 @@ class Prod:
             raise NoRuleToMakeTargetError(s_name)
         elif selected and ((not exists.exists) or (ts >= MAX_TS) or (exists.ts < ts)):
             logger.warning("building: %r", s_name)
-            await self.run_in_executor(builder.builder, name, *build_deps)
+            await self.run_in_executor(builder.builder, _name, *build_deps)
             self.built += 1
             return MAX_TS
 
