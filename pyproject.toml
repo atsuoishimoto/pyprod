@@ -40,4 +40,4 @@ asyncio_default_fixture_loop_scope="function"
 
 [tool.ruff.lint]
 select = ["E","F","W","B","N","T10","I"]
-ignore = ["F401"]
+ignore = ["F401", "B9"]
