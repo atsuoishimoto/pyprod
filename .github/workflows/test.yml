@@ -1,6 +1,8 @@
 name: Python application
 
 on:
+  workflow_call:
+  workflow_dispatch:
   push:
     branches: ["main"]
   pull_request:
@@ -9,6 +11,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
 
     steps:
       - name: Checkout repository
@@ -17,6 +26,13 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
       - name: Run tests
-        run: |
-          uv run pytest tests
+        run: uv run pytest tests
