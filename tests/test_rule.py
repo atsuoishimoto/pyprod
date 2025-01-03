@@ -1,5 +1,7 @@
 import re
+
 import pytest
+
 from pyprod import prod
 
 
