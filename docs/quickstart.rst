@@ -51,6 +51,7 @@ Next steps
 Next, let's modify the ``Prodfile.py`` to output the file into an ``output`` directory.
 
 .. code-block:: python
+
    output = Path("output") # We can use pathlib.Path without importing it
    
    @rule(output / "hello.txt", depends=output) # hello now depends on output directory
