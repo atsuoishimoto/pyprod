@@ -51,7 +51,6 @@ Next steps
 Next, let's modify the ``Prodfile.py`` to output the file into an ``output`` directory.
 
 .. code-block:: python
-
     output = Path("output") # We can use pathlib.Path without importing it
     
     @rule(output / "hello.txt", depends=output) # hello now depends on output directory
@@ -61,7 +60,7 @@ Next, let's modify the ``Prodfile.py`` to output the file into an ``output`` dir
 
     @rule(output)
     def makedir(target):
-        target.mkdir()
+        os.makedirs(target)
 
 In the modified ``Prodfile.py``, we have defined a rule to create the ``output`` directory and added a rule that makes the ``output/hello.txt`` file dependent on the ``output`` directory.
 

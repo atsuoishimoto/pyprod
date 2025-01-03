@@ -114,8 +114,6 @@ def rule_to_re(rule):
     srule = str(rule)
     srule = translate(srule)
     srule = replace_pattern(srule, "(?P<stem>.*)", maxreplace=1)
-    if isinstance(rule, Path):
-        return Path(srule)
     return srule
 
 
@@ -136,34 +134,40 @@ def replace_pattern(rule, replaceto, *, maxreplace=None):
             return replaceto
 
     s_rule = re.sub("%%|%", f, s_rule)
-    if isinstance(rule, Path):
-        return Path(s_rule)
     return s_rule
 
 
-@dataclass
 class Rule:
-    targets: list
-    pattern: str | None
-    depends: list
-    uses: list | None
-    builder: str | None
+    def __init__(self, targets, pattern, depends, uses, builder=None):
+        targets = list(flatten(targets))
+        self.targets = [rule_to_re(r) for r in targets]
 
-    orig_targets: list = field(init=False)
-    orig_depends: list = field(init=False)
-    orig_uses: list = field(init=False)
+        self.first_target = None
+        for target in targets:
+            if not target:
+                continue
 
-    def __post_init__(self):
-        self.orig_targets = list(flatten(self.targets))
-        self.orig_depends = list(flatten(self.depends))
-        self.orig_uses = list(flatten(self.uses))
+            target = str(target)
 
-        self.targets = [rule_to_re(r) for r in self.orig_targets]
-        self.depends = self.orig_depends[:]
-        if self.pattern:
-            self.pattern = rule_to_re(self.pattern)
-        if self.uses:
-            self.uses = self.orig_uses[:]
+            if "*" in target:
+                continue
+
+            matches = re.finditer(r"%%|%", target)
+            if any((len(m[0]) == 1) for m in matches):
+                # has %
+                continue
+
+            self.first_target = target
+            break
+
+        if pattern:
+            self.pattern = rule_to_re(pattern)
+        else:
+            self.pattern = None
+
+        self.depends = list(flatten(depends))
+        self.uses = list(flatten(uses))
+        self.builder = builder
 
     def __call__(self, f):
         self.builder = f
@@ -202,7 +206,7 @@ class Rules:
     def iter_rule(self, name):
         name = str(name)
         for dep in self.rules:
-            for target, orig_target in zip(dep.targets, dep.orig_targets):
+            for target in dep.targets:
                 m = re.fullmatch(str(target), name)
                 if m:
                     stem = None
@@ -220,11 +224,7 @@ class Rules:
 
                     depends = [replace_pattern(r, stem) for r in dep.depends]
                     uses = [replace_pattern(r, stem) for r in dep.uses]
-                    if isinstance(orig_target, Path):
-                        _name = Path(name)
-                    else:
-                        _name = str(name)
-                    yield _name, depends, uses, dep
+                    yield depends, uses, dep
                     break
 
     def get_dep_names(self, name):
@@ -232,7 +232,7 @@ class Rules:
         ret_depends = []
         ret_uses = []
 
-        for _name, depends, uses, dep in self.iter_rule(name):
+        for depends, uses, dep in self.iter_rule(name):
             if dep.builder:
                 continue
 
@@ -243,20 +243,14 @@ class Rules:
 
     def select_first_target(self):
         for dep in self.rules:
-            for target in dep.orig_targets:
-                s_target = str(target)
-                # pattern?
-                matches = re.finditer(r"%%|%", s_target)
-                if any((len(m[0]) == 1) for m in matches):
-                    # has %
-                    continue
-                return target
+            if dep.first_target:
+                return dep.first_target
 
     def select_builder(self, name):
-        for _name, depends, uses, dep in self.iter_rule(name):
+        for depends, uses, dep in self.iter_rule(name):
             if not dep.builder:
                 continue
-            return _name, depends, uses, dep
+            return depends, uses, dep
 
     def build_tree(self, name, lv=1):
         self.frozen = True
@@ -273,7 +267,7 @@ class Rules:
 
             selected = self.select_builder(name)
             if selected:
-                _, build_deps, build_uses, _ = selected
+                build_deps, build_uses, _ = selected
                 depends.extend(build_deps)
                 depends.extend(build_uses)
 
@@ -368,6 +362,21 @@ def quote(s):
     return shlex.quote(s)
 
 
+def read(filename):
+    with open(filename, "r") as f:
+        return f.read()
+
+
+def write(filename, s):
+    with open(filename, "w") as f:
+        f.write(s)
+
+
+def append(filename, s):
+    with open(filename, "a") as f:
+        f.write(s)
+
+
 class Prod:
     def __init__(self, modulefile, njobs=1, params=None):
         self.modulefile = Path(modulefile)
@@ -384,18 +393,22 @@ class Prod:
 
     def get_module_globals(self):
         globals = {
-            "pip": pip,
-            "rule": self.rules.rule,
-            "check": self.checkers.check,
-            "Path": Path,
-            "run": run,
+            "append": append,
             "capture": capture,
-            "glob": glob,
-            "MAX_TS": MAX_TS,
+            "check": self.checkers.check,
             "environ": Envs(),
-            "shutil": shutil,
-            "quote": shlex.quote,
+            "glob": glob,
+            "os": os,
             "params": self.params,
+            "pip": pip,
+            "quote": shlex.quote,
+            "read": read,
+            "rule": self.rules.rule,
+            "run": run,
+            "shutil": shutil,
+            "write": write,
+            "MAX_TS": MAX_TS,
+            "Path": Path,
         }
         return globals
 
@@ -509,13 +522,13 @@ class Prod:
         return Exists(name, True, ret)
 
     async def run(self, name):  # -> Any | int:
-        s_name = str(name)
+        name = str(name)
 
-        self.rules.build_tree(s_name)
-        deps, uses = self.rules.get_dep_names(s_name)
-        selected = self.rules.select_builder(s_name)
+        self.rules.build_tree(name)
+        deps, uses = self.rules.get_dep_names(name)
+        selected = self.rules.select_builder(name)
         if selected:
-            _name, build_deps, build_uses, builder = selected
+            build_deps, build_uses, builder = selected
             deps = deps + build_deps
             uses = uses + build_uses
 
@@ -525,20 +538,20 @@ class Prod:
         if uses:
             await self.build(uses)
 
-        exists = await self.is_exists(s_name)
+        exists = await self.is_exists(name)
 
         if not exists.exists:
-            logger.debug("%r does not exists", str(s_name))
+            logger.debug("%r does not exists", name)
         elif (ts >= MAX_TS) or (exists.ts < ts):
-            logger.debug("%r should be updated", str(s_name))
+            logger.debug("%r should be updated", name)
         else:
-            logger.debug("%r already exists", str(s_name))
+            logger.debug("%r already exists", name)
 
         if not exists.exists and not selected:
-            raise NoRuleToMakeTargetError(s_name)
+            raise NoRuleToMakeTargetError(name)
         elif selected and ((not exists.exists) or (ts >= MAX_TS) or (exists.ts < ts)):
-            logger.warning("building: %r", s_name)
-            await self.run_in_executor(builder.builder, _name, *build_deps)
+            logger.warning("building: %r", name)
+            await self.run_in_executor(builder.builder, name, *build_deps)
             self.built += 1
             return MAX_TS
 

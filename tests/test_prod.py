@@ -93,14 +93,14 @@ def build(target, src):
 
 @rule(target=Path("%.c"))
 def build_c(target):
-    assert isinstance(target, Path)
+    assert isinstance(target, str)
     Path(target).write_text(str(target))
 
 @rule(Path("app.exe"), depends=(Path("a.o"), Path("b.o")))
 def build_app(target, a, b):
-    assert isinstance(target, Path)
-    assert isinstance(a, Path)
-    assert isinstance(b, Path)
+    assert isinstance(target, str)
+    assert isinstance(a, str)
+    assert isinstance(b, str)
     Path(target).write_text(f"{target}, {a}, {b}")
 
 all = Path("app.exe")
@@ -124,19 +124,19 @@ async def test_preserve_pathobj(tmp_path):
     src = """
 @rule(target=Path("%.o"), depends=Path("%.c"))
 def build(target, src):
-    assert isinstance(target, Path)
+    assert isinstance(target, str)
     Path(target).write_text("a")
 
 @rule(target=Path("%.c"))
 def build_c(target):
-    assert isinstance(target, Path)
+    assert isinstance(target, str)
     Path(target).write_text(str(target))
 
 @rule(Path("app.exe"), depends=Path("a.o"))
 def build_app(target, src):
-    assert isinstance(target, Path)
-    assert isinstance(src, Path)
-    target.write_text("app.exe")
+    assert isinstance(target, str)
+    assert isinstance(src, str)
+    Path(target).write_text("app.exe")
 
 all = Path("app.exe")
 """

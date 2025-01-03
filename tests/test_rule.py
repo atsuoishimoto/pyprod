@@ -52,8 +52,7 @@ def test_builder():
     def g():
         pass
 
-    _name, deps, uses, _ = rules.select_builder("a")
-    assert _name == "a"
+    deps, uses, _ = rules.select_builder("a")
     assert deps == ["b", "c"]
     assert uses == ["d"]
 
@@ -65,7 +64,7 @@ def test_stem():
     def f():
         pass
 
-    _name, deps, _, _ = rules.select_builder("a.o")
+    deps, _, _ = rules.select_builder("a.o")
     assert deps == ["a.c"]
 
 
@@ -76,7 +75,7 @@ def test_stem_wildcard():
     def f():
         pass
 
-    _, deps, _, _ = rules.select_builder("dir/dir2/a.o")
+    deps, _, _ = rules.select_builder("dir/dir2/a.o")
     assert deps == ["a.c"]
 
 
@@ -87,14 +86,11 @@ def test_stem_escape():
     def f():
         pass
 
-    _, deps, _, _ = rules.select_builder("a.%")
+    deps, _, _ = rules.select_builder("a.%")
     assert deps == ["a.%"]
 
 
 def test_stem_error():
-    with pytest.raises(ValueError):
-        raise ValueError("s;dlf,")
-
     rules = prod.Rules()
 
     with pytest.raises(prod.InvalidRuleError):
@@ -107,5 +103,5 @@ def test_stem_error():
     def f():
         pass
 
-    _, deps, _, _ = rules.select_builder("abc.xxx")
+    deps, _, _ = rules.select_builder("abc.xxx")
     assert deps == ["abc.abc"]

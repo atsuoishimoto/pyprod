@@ -31,16 +31,15 @@ def make_pdf(target, src):
 # Rebuilds when Python modules change
 @rule(BUILD / "%.html", depends=(Path("%.md"), TEMPLATE, MODULES), uses=BUILD)
 def make_html(target, src, template, *_):
-    src = src.read_text()
-    body = md_to_html(src)
-    html = template.read_text().format(body=body)
-    target.write_text(html)
+    body = md_to_html(open(src).read())
+    html = open(template).read().format(body=body)
+    open(target, "w").write(html)
 
 
 # create outputs directory
 @rule(BUILD)
 def builds(target):
-    target.mkdir(parents=True)
+    os.makedirs(target)
 
 
 def clean():

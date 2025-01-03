@@ -7,7 +7,8 @@ import boto3, botocore
 from urllib.parse import urlparse
 
 s3 = boto3.client("s3")
-TARGET = f"s3://TESTBUCKET/S3TEST.txt"
+BUCKET = params.BUCKET or "TESTBUCKET" # Run pyprod with BUCKET=bucket-name
+TARGET = f"s3://{BUCKET}/S3TEST.txt"
 
 
 def parse_s3url(s3url):
