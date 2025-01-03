@@ -33,7 +33,7 @@ class NoRuleToMakeTargetError(Exception):
     pass
 
 
-class InvalidRuleError(Exception):
+class RuleError(Exception):
     pass
 
 
@@ -109,7 +109,7 @@ def glob(path, dir="."):
 
 def rule_to_re(rule):
     if not isinstance(rule, (str, Path)):
-        raise InvalidRuleError(rule)
+        raise RuleError(rule)
 
     srule = str(rule)
     srule = translate(srule)
@@ -130,43 +130,96 @@ def replace_pattern(rule, replaceto, *, maxreplace=None):
             if maxreplace is not None:
                 if n > maxreplace:
                     # contains multiple '%'
-                    raise InvalidRuleError(s_rule)
+                    raise RuleError(f"{s_rule} contains multiple '%'")
+
             return replaceto
 
     s_rule = re.sub("%%|%", f, s_rule)
     return s_rule
 
 
+def _check_pattern_count(pattern):
+    """Counts number of '%' in the pattern"""
+    matches = re.finditer(r"%%|%", pattern)
+    num = len([m for m in matches if len(m[0]) == 1])
+    if num > 1:
+        raise RuleError(f"{pattern}: Multiple '%' is not allowed")
+    return num
+
+
+def _check_pattern(pattern):
+    matches = re.finditer(r"%%|%", pattern)
+    singles = [m for m in matches if len(m[0]) == 1]
+    if len(singles) > 1:
+        raise RuleError(f"{pattern}: Multiple '%' is not allowed")
+    if not len(singles):
+        raise RuleError(f"{pattern}: Pattern should contain a '%'.")
+
+
+def _strip_dot(path):
+    if not path:
+        return path
+    path = Path(path)  # ./aaa/ -> aaa
+    parts = path.parts
+    if ".." in parts:
+        raise RuleError(f"{path}: '..' directory is not allowed")
+    return str(path)
+
+
+def _check_wildcard(path):
+    if "*" in path:
+        raise RuleError(f"{path}: '*' directory is not allowed")
+
+
 class Rule:
     def __init__(self, targets, pattern, depends, uses, builder=None):
-        targets = list(flatten(targets))
-        self.targets = [rule_to_re(r) for r in targets]
+        self.targets = []
+        for target in flatten(targets or ()):
+            target = str(target)
+            _check_pattern_count(target)
+            target = _strip_dot(target)
+            target = rule_to_re(target)
+            self.targets.append(target)
 
         self.first_target = None
-        for target in targets:
+        for target in flatten(targets or ()):
+            target = str(target)
             if not target:
                 continue
-
-            target = str(target)
 
             if "*" in target:
                 continue
 
-            matches = re.finditer(r"%%|%", target)
-            if any((len(m[0]) == 1) for m in matches):
-                # has %
-                continue
-
-            self.first_target = target
-            break
+            if _check_pattern_count(target) == 0:
+                # not contain one %
+                self.first_target = target
+                break
 
         if pattern:
+            pattern = _strip_dot(pattern)
+            if _check_pattern_count(pattern) != 1:
+                raise RuleError(f"{pattern}: Pattern should contain a '%'")
+
             self.pattern = rule_to_re(pattern)
         else:
             self.pattern = None
 
-        self.depends = list(flatten(depends))
-        self.uses = list(flatten(uses))
+        self.depends = []
+        for depend in flatten(depends or ()):
+            depend = str(depend)
+            _check_pattern_count(depend)
+            _check_wildcard(depend)
+            depend = _strip_dot(depend)
+            self.depends.append(depend)
+
+        self.uses = []
+        for use in flatten(uses or ()):
+            use = str(use)
+            _check_pattern_count(use)
+            _check_wildcard(use)
+            use = _strip_dot(use)
+            self.uses.append(use)
+
         self.builder = builder
 
     def __call__(self, f):
@@ -457,13 +510,13 @@ class Prod:
             if isinstance(obj, str | Path):
                 builds.append(obj)
             elif isinstance(obj, Rule):
-                raise InvalidRuleError(obj)
+                raise RuleError(obj)
             elif callable(obj):
                 self.built += 1
                 task = asyncio.create_task(self.run_in_executor(obj))
                 waitings.append(task)
             else:
-                raise InvalidRuleError(obj)
+                raise RuleError(obj)
 
         await self.build(builds)
         await asyncio.gather(*waitings)

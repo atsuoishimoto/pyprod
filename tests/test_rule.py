@@ -1,5 +1,5 @@
+import re
 import pytest
-
 from pyprod import prod
 
 
@@ -93,15 +93,72 @@ def test_stem_escape():
 def test_stem_error():
     rules = prod.Rules()
 
-    with pytest.raises(prod.InvalidRuleError):
+    with pytest.raises(prod.RuleError):
 
         @rules.rule(target="%.%", depends="%.c")
         def f():
             pass
 
-    @rules.rule(target="%.xxx", depends="%.%")
+    @rules.rule(target="%.xxx", depends="%")
     def f():
         pass
 
     deps, _, _ = rules.select_builder("abc.xxx")
-    assert deps == ["abc.abc"]
+    assert deps == ["abc"]
+
+
+def test_validate_target():
+    with pytest.raises(prod.RuleError):
+        prod.Rule("%.%", "", "", "")
+
+    with pytest.raises(prod.RuleError):
+        prod.Rule("../aaa", "", "", "")
+
+    with pytest.raises(prod.RuleError):
+        rule = prod.Rule("../aaa/", "", "", "")
+
+    rule = prod.Rule("./aaa/", None, None, None)
+    assert re.fullmatch(rule.targets[0], "aaa")
+
+
+def test_validate_pattern():
+    with pytest.raises(prod.RuleError):
+        prod.Rule("a.b", "%.%", "", "")
+
+    with pytest.raises(prod.RuleError):
+        prod.Rule("a.b", "../%.b", "", "")
+
+    with pytest.raises(prod.RuleError):
+        rule = prod.Rule("a.b", "../a.%", "", "")
+
+    with pytest.raises(prod.RuleError):
+        rule = prod.Rule("a.b", "a.b", "", "")
+
+    rule = prod.Rule("a.b", "./a.%", None, None)
+    assert re.fullmatch(rule.pattern, "a.b")
+
+
+def test_validate_depends():
+    with pytest.raises(prod.RuleError):
+        prod.Rule("a.%", None, "%.%", "")
+
+    with pytest.raises(prod.RuleError):
+        prod.Rule("a.%", None, "*/x.y", "")
+
+    with pytest.raises(prod.RuleError):
+        prod.Rule("a.%", None, "../x.y", "")
+
+    prod.Rule("a.b", None, "x.y", "")
+
+
+def test_validate_uses():
+    with pytest.raises(prod.RuleError):
+        prod.Rule("a.%", None, "", "%.%")
+
+    with pytest.raises(prod.RuleError):
+        prod.Rule("a.%", None, "", "*/x.y")
+
+    with pytest.raises(prod.RuleError):
+        prod.Rule("a.%", None, "", "../x.y")
+
+    prod.Rule("a.b", None, "x.y", "")
