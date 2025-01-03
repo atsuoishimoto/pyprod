@@ -47,3 +47,7 @@ def test_glob(tmp_path):
         d1 / "b.txt",
         d2 / "a.txt",
     }
+
+
+def test_squote():
+    assert prod.squote("abc", ["12 3"]) == ["abc", "'12 3'"]

@@ -268,15 +268,16 @@ class Rules:
                         stem = d
                     elif dep.pattern:
                         m = re.fullmatch(str(dep.pattern), name)
-                        if not m:
-                            print(name, dep.pattern)
-                            continue
-                        d = m.groupdict().get("stem", None)
-                        if d is not None:
-                            stem = d
+                        if m:
+                            stem = m.groupdict().get("stem", None)
 
-                    depends = [replace_pattern(r, stem) for r in dep.depends]
-                    uses = [replace_pattern(r, stem) for r in dep.uses]
+                    if stem is not None:
+                        depends = [replace_pattern(r, stem) for r in dep.depends]
+                        uses = [replace_pattern(r, stem) for r in dep.uses]
+                    else:
+                        depends = dep.depends[:]
+                        uses = dep.uses[:]
+
                     yield depends, uses, dep
                     break
 
@@ -409,25 +410,28 @@ class Envs:
         return os.environ.get(name, default=default)
 
 
-def quote(s):
-    if isinstance(s, Path):
-        s = str(s)
-    return shlex.quote(s)
-
-
 def read(filename):
     with open(filename, "r") as f:
         return f.read()
 
 
-def write(filename, s):
-    with open(filename, "w") as f:
+def write(filename, s, append=False):
+    mode = "a" if append else "w"
+    with open(filename, mode) as f:
         f.write(s)
 
 
-def append(filename, s):
-    with open(filename, "a") as f:
-        f.write(s)
+def quote(s):
+    return shlex.quote(str(s))
+
+
+def squote(*s):
+    ret = [shlex.quote(str(x)) for x in flatten(s)]
+    return ret
+
+
+def makedirs(path):
+    os.makedirs(path, exist_ok=True)
 
 
 class Prod:
@@ -446,15 +450,18 @@ class Prod:
 
     def get_module_globals(self):
         globals = {
-            "append": append,
             "capture": capture,
             "check": self.checkers.check,
             "environ": Envs(),
             "glob": glob,
+            "makedirs": makedirs,
             "os": os,
             "params": self.params,
             "pip": pip,
-            "quote": shlex.quote,
+            "quote": quote,
+            "q": quote,
+            "squote": squote,
+            "sq": squote,
             "read": read,
             "rule": self.rules.rule,
             "run": run,

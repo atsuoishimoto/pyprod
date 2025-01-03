@@ -29,7 +29,13 @@ A rule is defined using the ``@rule`` decorator, which takes the target file as 
 
 Build function
 ~~~~~~~~~~~~~~~~~~~
-The first argument of the decorated function specifies the target file to be generated. The target can be a string or a Path object, depending on the value provided in the target parameter. Subsequent arguments correspond to the filenames listed in the depends parameter. The rule function must accept the target and the same number of arguments as those specified in depends.
+
+The function following the ``@rule`` decorator is the build function that generates the target file. 
+
+- The first argument of the build function specifies the target file to be generated.
+- Subsequent arguments correspond to the filenames listed in the depends parameter. The rule function must accept the target and the same number of arguments as those specified in depends.
+- ``uses`` dependencies are not passed to the build function.
+- Even if Path objects are specified in the ``rule``, all arguments passed to the builder function will be of type str.
 
 For example, the following code prints ``file1 ['file2', 'file3']`` when the target file ``file1`` is built:
 
@@ -229,6 +235,36 @@ Example:
       msg = capture("echo Hello, World!")
    
 
+.. py:function:: read(filename):
+   
+   Read the contents of a file.
+
+   :param filename: The file to read.
+   :type filename: str | Path
+
+   :return: The contents of the file.
+   :rtype: str
+
+.. py:function:: write(filename, txt, append=False):
+   
+   Write text to a file.
+
+   :param filename: The file to write to.
+   :type filename: str | Path
+
+   :param txt: The text to write.
+   :type txt: str
+
+   :param append: Append to the file instead of overwriting it (default ``False``).
+   :type append: bool
+
+.. py:function:: makedirs(path):
+   
+   Create a directory along with any necessary parent directories if they do not already exist. This function wraps `os.makedirs() <https://docs.python.org/3/library/os.html#os.makedirs>`_ with the ``exists_ok`` parameter set to ``True``.
+
+   :param path: The directory to create.
+   :type path: str | Path
+
 .. py:function::  glob(path, dir=".")
 
    Glob the given relative pattern in the directory represented by this path. This function is a wrapper around `pathlib.Path.glob() <https://docs.python.org/3/library/pathlib.html#pathlib.Path.glob>`_. Unlike ``pathlib.Path.glob()``, this function ignores files and directlies that start with a dot. Also, this function returns a list of Path objects.
@@ -250,14 +286,26 @@ Example:
       SRCFILES = glob("**/*.c")
    
 .. py:function::  quote(s)
+.. py:function::  q(s)
 
-   Quote a string for use as a shell command argument. This function is a wrapper around `shlex.quote() <https://docs.python.org/3/library/shlex.html#shlex.quote>`_.
+   Convert ``s`` to string and quote for use as a shell command argument. This function is a wrapper around `shlex.quote() <https://docs.python.org/3/library/shlex.html#shlex.quote>`_.
 
    :param s: The string to quote.
    :type s: str
 
    :return: The quoted string.
    :rtype: str
+
+.. py:function::  squote(*s)
+.. py:function::  sq(*s)
+
+   Quote strings in ``s``. Each ``s`` is flattend.
+
+   :param s: The string to quote.
+   :type s: str | list
+
+   :return: The list of quoted strings.
+   :rtype: list[str]
 
 .. py:class::  Path
    
