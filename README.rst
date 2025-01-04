@@ -1,7 +1,7 @@
 PyProd - More Makeable than Make
 =================================
 
-PyProd is a Python script that can be used as an alternative to Makefile. By leveraging Python's versatility, it enables you to define build rules and dependencies programmatically, allowing for dynamic configurations, integration with existing Python libraries, and custom build logic not easily achievable with traditional Makefiles. For detailed documentation, please refer to the `official documentation <https://pyprod.readthedocs.io/en/latest/>`_.
+PyProd is a Python script that can be used as an alternative to Makefile. By leveraging Python's versatility, it enables you to define build rules and dependencies programmatically, allowing for dynamic configurations, integration with existing Python libraries, and custom build logic not easily achievable with traditional Makefiles. For detailed documentation, please refer to the `official documentation <https://pyprod.readthedocs.io/en/stable/>`_.
 
 
 Features
