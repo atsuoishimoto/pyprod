@@ -172,10 +172,14 @@ def _check_wildcard(path):
 
 
 class Rule:
-    def __init__(self, targets, pattern, depends, uses, builder=None):
+    def __init__(self, targets, pattern, depends, uses, builder=None, name=None):
         self.targets = []
         for target in flatten(targets or ()):
+            if not target:
+                continue
             target = str(target)
+            if not target:
+                continue
             _check_pattern_count(target)
             target = _strip_dot(target)
             target = rule_to_re(target)
@@ -221,9 +225,35 @@ class Rule:
             self.uses.append(use)
 
         self.builder = builder
+        self.name = name
 
     def __call__(self, f):
         self.builder = f
+        return f
+
+
+class Task(Rule):
+    def __init__(self, name, depends, func=None):
+        super().__init__(
+            (), pattern=None, depends=depends, uses=(), builder=func, name=name
+        )
+        if func:
+            self.set_funcname(func)
+
+    def set_funcname(self, f):
+        if not self.name:
+            if not f.__name__ or f.__name__ == "<lambda>":
+                raise RuleError(
+                    "Task function should have a name. Use @task(name='name')"
+                )
+            self.name = f.__name__
+            self.targets = [f.__name__]
+
+        self.first_target = True
+
+    def __call__(self, f):
+        self.builder = f
+        self.set_funcname(f)
         return f
 
 
@@ -248,12 +278,26 @@ class Rules:
         self.rules.append(dep)
         return dep
 
+    def add_task(self, name=None, depends=(), func=None):
+        if self.frozen:
+            raise RuntimeError("No new rule can be added after initialization")
+
+        dep = Task(name, depends, func)
+        self.rules.append(dep)
+        return dep
+
     def rule(self, target, pattern=None, depends=(), uses=()):
         if (not isinstance(depends, Collection)) or isinstance(depends, str):
             depends = [depends]
         if (not isinstance(uses, Collection)) or isinstance(uses, str):
             uses = [uses]
         dep = self.add_rule([target], pattern, depends, uses, None)
+        return dep
+
+    def task(self, name=None, depends=()):
+        if (not isinstance(depends, Collection)) or isinstance(depends, str):
+            depends = [depends]
+        dep = self.add_rule(name, None, depends, [], None)
         return dep
 
     def iter_rule(self, name):

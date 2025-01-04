@@ -49,5 +49,9 @@ def test_glob(tmp_path):
     }
 
 
-def test_squote():
-    assert prod.squote("abc", ["12 3"]) == ["abc", "'12 3'"]
+def test_quote():
+    assert prod.quote("abc", ["12 3", ["4"]]) == ["abc", "'12 3'", "4"]
+
+
+def test_suote():
+    assert prod.squote(["abc", ["12 3"]]) == "'abc 12 3'"
