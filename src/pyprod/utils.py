@@ -1,8 +1,8 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 
 
 def flatten(seq):
-    if isinstance(seq, str) or (not isinstance(seq, Sequence)):
+    if isinstance(seq, str) or (not isinstance(seq, Sequence | Iterator)):
         yield seq
         return
 
