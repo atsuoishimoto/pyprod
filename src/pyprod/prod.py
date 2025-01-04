@@ -421,13 +421,14 @@ def write(filename, s, append=False):
         f.write(s)
 
 
-def quote(s):
-    return shlex.quote(str(s))
-
-
-def squote(*s):
+def quote(*s):
     ret = [shlex.quote(str(x)) for x in flatten(s)]
     return ret
+
+
+def squote(s):
+    s = " ".join(str(e) for e in flatten(s))
+    return shlex.quote(s)
 
 
 def makedirs(path):

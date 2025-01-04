@@ -285,19 +285,8 @@ Example:
    
       SRCFILES = glob("**/*.c")
    
-.. py:function::  quote(s)
-.. py:function::  q(s)
-
-   Convert ``s`` to string and quote for use as a shell command argument. This function is a wrapper around `shlex.quote() <https://docs.python.org/3/library/shlex.html#shlex.quote>`_.
-
-   :param s: The string to quote.
-   :type s: str
-
-   :return: The quoted string.
-   :rtype: str
-
-.. py:function::  squote(*s)
-.. py:function::  sq(*s)
+.. py:function::  quote(*s)
+.. py:function::  q(*s)
 
    Quote strings in ``s``. Each ``s`` is flattend.
 
@@ -306,6 +295,17 @@ Example:
 
    :return: The list of quoted strings.
    :rtype: list[str]
+
+.. py:function::  squote(s)
+.. py:function::  sq(s)
+
+   Convert ``s`` to string and quote for use as a shell command argument. This function is a wrapper around `shlex.quote() <https://docs.python.org/3/library/shlex.html#shlex.quote>`_.
+
+   :param s: The string to quote. If ``s`` is sequence, it is flattened and joined with space.
+   :type s: str | list
+
+   :return: The quoted string.
+   :rtype: str
 
 .. py:class::  Path
    
