@@ -37,6 +37,10 @@ class RuleError(Exception):
     pass
 
 
+class TargetError(Exception):
+    pass
+
+
 class HandledExceptionError(Exception):
     pass
 
@@ -109,7 +113,7 @@ def glob(path, dir="."):
 
 def rule_to_re(rule):
     if not isinstance(rule, (str, Path)):
-        raise RuleError(rule)
+        raise TypeError(f"str or Path required: {rule}")
 
     srule = str(rule)
     srule = translate(srule)
@@ -197,6 +201,7 @@ class Rule:
                 self.targets.append(target)
 
         if pattern:
+            pattern = str(pattern)
             if _check_pattern_count(pattern) != 1:
                 raise RuleError(f"{pattern}: Pattern should contain a '%'")
 
@@ -351,7 +356,8 @@ class Rules:
 
         name = _name_to_str(name)
         if name in self._detect_loop:
-            raise CircularReferenceError(name)
+            raise CircularReferenceError(f"Circular reference detected: {name}")
+
         self._detect_loop.add(name)
         try:
             if name in self.tree:
@@ -569,13 +575,13 @@ class Prod:
             if isinstance(obj, str | Path):
                 builds.append(obj)
             elif isinstance(obj, Rule):
-                raise RuleError(obj)
+                raise TargetError(f"Invalid target specified: {obj}")
             elif callable(obj):
                 self.built += 1
                 task = asyncio.create_task(self.run_in_executor(obj))
                 waitings.append(task)
             else:
-                raise RuleError(obj)
+                raise TargetError(f"Invalid target specified: {obj}")
 
         await self.build(builds)
         await asyncio.gather(*waitings)
@@ -664,7 +670,8 @@ class Prod:
             logger.debug("%r already exists", name)
 
         if not exists.exists and not selected:
-            raise NoRuleToMakeTargetError(name)
+            raise NoRuleToMakeTargetError("No rule to make target: {name}")
+
         elif selected and ((not exists.exists) or (ts >= MAX_TS) or (exists.ts < ts)):
             logger.warning("building: %r", name)
             await self.run_in_executor(builder.builder, name, *build_deps)

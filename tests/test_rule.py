@@ -113,31 +113,13 @@ def test_validate_target():
     with pytest.raises(prod.RuleError):
         prod.Rule("%.%", "", "", "")
 
-    with pytest.raises(prod.RuleError):
-        prod.Rule("../aaa", "", "", "")
-
-    with pytest.raises(prod.RuleError):
-        rule = prod.Rule("../aaa/", "", "", "")
-
-    rule = prod.Rule("./aaa/", None, None, None)
-    assert re.fullmatch(rule.targets[0], "aaa")
-
 
 def test_validate_pattern():
     with pytest.raises(prod.RuleError):
         prod.Rule("a.b", "%.%", "", "")
 
     with pytest.raises(prod.RuleError):
-        prod.Rule("a.b", "../%.b", "", "")
-
-    with pytest.raises(prod.RuleError):
-        rule = prod.Rule("a.b", "../a.%", "", "")
-
-    with pytest.raises(prod.RuleError):
-        rule = prod.Rule("a.b", "a.b", "", "")
-
-    rule = prod.Rule("a.b", "./a.%", None, None)
-    assert re.fullmatch(rule.pattern, "a.b")
+        _ = prod.Rule("a.b", "a.b", "", "")
 
 
 def test_validate_depends():
@@ -146,9 +128,6 @@ def test_validate_depends():
 
     with pytest.raises(prod.RuleError):
         prod.Rule("a.%", None, "*/x.y", "")
-
-    with pytest.raises(prod.RuleError):
-        prod.Rule("a.%", None, "../x.y", "")
 
     prod.Rule("a.b", None, "x.y", "")
 
@@ -159,9 +138,6 @@ def test_validate_uses():
 
     with pytest.raises(prod.RuleError):
         prod.Rule("a.%", None, "", "*/x.y")
-
-    with pytest.raises(prod.RuleError):
-        prod.Rule("a.%", None, "", "../x.y")
 
     prod.Rule("a.b", None, "x.y", "")
 

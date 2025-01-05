@@ -48,4 +48,4 @@ def ls():
     run("aws s3 ls", bucket)
 
 
-rule("S3TEST.txt")  # Define target for default goal
+
