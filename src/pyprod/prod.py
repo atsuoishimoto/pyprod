@@ -171,33 +171,41 @@ def _check_wildcard(path):
         raise RuleError(f"{path}: '*' directory is not allowed")
 
 
+def _name_to_str(name):
+    match name:
+        case _TaskFunc():
+            return name.name
+        case Path():
+            return str(name)
+        case str():
+            return name
+
+    return name
+
+
 class Rule:
-    def __init__(self, targets, pattern, depends, uses, builder=None, name=None):
+    def __init__(
+        self, targets, pattern=None, depends=(), uses=(), builder=None, name=None
+    ):
         self.targets = []
-        for target in flatten(targets or ()):
-            if not target:
-                continue
-            target = str(target)
-            if not target:
-                continue
-            _check_pattern_count(target)
-            target = _strip_dot(target)
-            target = rule_to_re(target)
-            self.targets.append(target)
-
         self.first_target = None
-        for target in flatten(targets or ()):
-            target = str(target)
-            if not target:
-                continue
+        if targets:
+            for target in flatten(targets):
+                if not target:
+                    continue
+                target = str(target)
+                if not target:
+                    continue
 
-            if "*" in target:
-                continue
+                if not self.first_target:
+                    if "*" not in target:
+                        if _check_pattern_count(target) == 0:
+                            # not contain one %
+                            self.first_target = target
 
-            if _check_pattern_count(target) == 0:
-                # not contain one %
-                self.first_target = target
-                break
+                target = _strip_dot(target)
+                target = rule_to_re(target)
+                self.targets.append(target)
 
         if pattern:
             pattern = _strip_dot(pattern)
@@ -210,7 +218,7 @@ class Rule:
 
         self.depends = []
         for depend in flatten(depends or ()):
-            depend = str(depend)
+            depend = _name_to_str(depend)
             _check_pattern_count(depend)
             _check_wildcard(depend)
             depend = _strip_dot(depend)
@@ -218,29 +226,42 @@ class Rule:
 
         self.uses = []
         for use in flatten(uses or ()):
-            use = str(use)
+            use = _name_to_str(use)
             _check_pattern_count(use)
             _check_wildcard(use)
             use = _strip_dot(use)
             self.uses.append(use)
 
         self.builder = builder
-        self.name = name
+        self.name = _name_to_str(name)
 
     def __call__(self, f):
         self.builder = f
         return f
 
 
-class Task(Rule):
-    def __init__(self, name, depends, func=None):
-        super().__init__(
-            (), pattern=None, depends=depends, uses=(), builder=func, name=name
-        )
-        if func:
-            self.set_funcname(func)
+class _TaskFunc:
+    def __init__(self, f, name):
+        self.f = f
+        self.name = name
 
-    def set_funcname(self, f):
+    def __call__(self, *args, **kwargs):
+        return self.f(*args, **kwargs)
+
+
+class Task(Rule):
+    def __init__(self, name, depends, uses, func=None):
+        super().__init__(
+            (), pattern=None, depends=depends, uses=uses, builder=func, name=name
+        )
+        if name:
+            self.targets = [name]
+            self.first_target = True
+
+        if func:
+            self._set_funcname(func)
+
+    def _set_funcname(self, f):
         if not self.name:
             if not f.__name__ or f.__name__ == "<lambda>":
                 raise RuleError(
@@ -253,7 +274,8 @@ class Task(Rule):
 
     def __call__(self, f):
         self.builder = f
-        self.set_funcname(f)
+        self._set_funcname(f)
+        return _TaskFunc(f, self.name)
         return f
 
 
@@ -264,54 +286,42 @@ class Rules:
         self._detect_loop = set()
         self.frozen = False
 
-    def add_rule(self, targets, pattern, depends, uses, builder):
+    def add_rule(self, targets, pattern=None, depends=(), uses=(), builder=None):
         if self.frozen:
             raise RuntimeError("No new rule can be added after initialization")
 
-        dep = Rule(
-            targets,
-            pattern,
-            depends,
-            uses,
-            builder,
-        )
+        dep = Rule(targets, pattern, depends, uses, builder)
         self.rules.append(dep)
         return dep
 
-    def add_task(self, name=None, depends=(), func=None):
+    def add_task(self, name=None, depends=(), uses=(), func=None):
         if self.frozen:
             raise RuntimeError("No new rule can be added after initialization")
 
-        dep = Task(name, depends, func)
+        dep = Task(name, depends, uses, func)
         self.rules.append(dep)
         return dep
 
-    def rule(self, target, pattern=None, depends=(), uses=()):
-        if (not isinstance(depends, Collection)) or isinstance(depends, str):
-            depends = [depends]
-        if (not isinstance(uses, Collection)) or isinstance(uses, str):
-            uses = [uses]
+    def rule(self, target, *, pattern=None, depends=(), uses=()):
         dep = self.add_rule([target], pattern, depends, uses, None)
         return dep
 
-    def task(self, name=None, depends=()):
-        if (not isinstance(depends, Collection)) or isinstance(depends, str):
-            depends = [depends]
-        dep = self.add_rule(name, None, depends, [], None)
+    def task(self, func=None, *, name=None, depends=(), uses=()):
+        dep = self.add_task(name, depends, uses, func)
         return dep
 
     def iter_rule(self, name):
-        name = str(name)
+        name = _name_to_str(name)
         for dep in self.rules:
             for target in dep.targets:
-                m = re.fullmatch(str(target), name)
+                m = re.fullmatch(target, name)
                 if m:
                     stem = None
                     d = m.groupdict().get("stem", None)
                     if d is not None:
                         stem = d
                     elif dep.pattern:
-                        m = re.fullmatch(str(dep.pattern), name)
+                        m = re.fullmatch(dep.pattern, name)
                         if m:
                             stem = m.groupdict().get("stem", None)
 
@@ -353,7 +363,7 @@ class Rules:
     def build_tree(self, name, lv=1):
         self.frozen = True
 
-        name = str(name)
+        name = _name_to_str(name)
         if name in self._detect_loop:
             raise CircularReferenceError(name)
         self._detect_loop.add(name)
@@ -370,7 +380,7 @@ class Rules:
                 depends.extend(build_uses)
 
             depends = unique_list(depends)
-            self.tree[name].update(str(d) for d in depends)
+            self.tree[name].update(depends)
             for dep in depends:
                 self.build_tree(dep, lv=lv + 1)
 
@@ -383,13 +393,15 @@ class Checkers:
         self.checkers = []
 
     def get_checker(self, name):
+        name = _name_to_str(name)
         for targets, f in self.checkers:
             for target in targets:
-                if fnmatch(name, str(target)):
+                if fnmatch(name, target):
                     return f
 
     def add_check(self, target, f):
-        self.checkers.append((list(t for t in flatten(target)), f))
+        target = list(map(_name_to_str, flatten(target or ())))
+        self.checkers.append((target, f))
 
     def check(self, target):
         def deco(f):
@@ -481,7 +493,11 @@ def makedirs(path):
 
 class Prod:
     def __init__(self, modulefile, njobs=1, params=None):
-        self.modulefile = Path(modulefile)
+        if modulefile:
+            self.modulefile = Path(modulefile)
+        else:
+            self.modulefile = None
+
         self.rules = Rules()
         self.checkers = Checkers()
         if njobs > 1:
@@ -490,7 +506,9 @@ class Prod:
             self.executor = None
         self.params = Params(params)
         self.buildings = {}
-        self.module = self.load_pyprodfile(self.modulefile)
+        self.module = None
+        if self.modulefile:
+            self.module = self.load_pyprodfile(self.modulefile)
         self.built = 0  # number of build execused
 
     def get_module_globals(self):
@@ -511,6 +529,7 @@ class Prod:
             "rule": self.rules.rule,
             "run": run,
             "shutil": shutil,
+            "task": self.rules.task,
             "write": write,
             "MAX_TS": MAX_TS,
             "Path": Path,
@@ -627,7 +646,7 @@ class Prod:
         return Exists(name, True, ret)
 
     async def run(self, name):  # -> Any | int:
-        name = str(name)
+        name = _name_to_str(name)
 
         self.rules.build_tree(name)
         deps, uses = self.rules.get_dep_names(name)
@@ -642,6 +661,10 @@ class Prod:
             ts = await self.build(deps)
         if uses:
             await self.build(uses)
+
+        if selected and isinstance(builder, Task):
+            await self.run_in_executor(builder.builder, *build_deps)
+            return MAX_TS
 
         exists = await self.is_exists(name)
 

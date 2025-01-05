@@ -10,7 +10,7 @@ Rule definition
 
 A rule is defined using the ``@rule`` decorator, which takes the target file as an argument. The target file is the output of the rule, and the function that follows the decorator is the build logic that generates the target file.
 
-.. py:function:: @rule(target, pattern=None, depends=(), uses=())
+.. py:function:: @rule(target, pattern=None, *, depends=(), uses=())
 
    Defines rule to build target files.
 
@@ -137,6 +137,39 @@ For example, a checker to retrieve the last modified timestamp of a file on Amaz
               return
           raise
    
+Task definition
+^^^^^^^^^^^^^^^^^^
+
+A task is similar to a rule but does not have a target and is always executed when it is depended upon.
+
+.. py:function:: @task(*, name=None, depends=(), uses=())
+
+   Defines a task to be executed.
+
+   :param name: The name of the task. Defaults to the function name.
+   :type name: str
+
+   :param depends: Specify the dependencies of the task. The task is alwayes excused regardless of the timestamp of the dependencies. The dependencies are passed to the task function as arguments.
+   :type depends: str | Path | list[str | Path]
+
+   :param uses: Specify the dependencies of the target file. Unline the ``depends`` parameter, ``uses`` are not passed to the task function.
+   :type uses: str | Path | list[str | Path]
+
+
+.. code-block:: python
+
+   @task(depends=("file1", "file2"))
+   def my_task(*files):
+       print("Task executed", files)
+
+
+`@task` can be used without any arguments if no dependencies are specified.
+
+.. code-block:: python
+
+   @task
+   def my_task(*files):
+       print("Task executed", files)
 
 
 

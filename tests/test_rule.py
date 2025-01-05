@@ -164,3 +164,9 @@ def test_validate_uses():
         prod.Rule("a.%", None, "", "../x.y")
 
     prod.Rule("a.b", None, "x.y", "")
+
+
+def test_first_target():
+    assert not prod.Rule("%.a", None, None, None).first_target
+    assert not prod.Rule("*.a", None, None, None).first_target
+    assert prod.Rule(("%.a", "a.b"), None, None, None).first_target == "a.b"
