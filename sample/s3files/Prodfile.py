@@ -46,6 +46,3 @@ def ls():
     """Lists the contents of an S3 bucket."""
     bucket, key = parse_s3url(TARGET)
     run("aws s3 ls", bucket)
-
-
-
