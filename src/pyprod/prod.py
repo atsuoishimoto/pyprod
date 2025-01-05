@@ -156,16 +156,6 @@ def _check_pattern(pattern):
         raise RuleError(f"{pattern}: Pattern should contain a '%'.")
 
 
-def _strip_dot(path):
-    if not path:
-        return path
-    path = Path(path)  # ./aaa/ -> aaa
-    parts = path.parts
-    if ".." in parts:
-        raise RuleError(f"{path}: '..' directory is not allowed")
-    return str(path)
-
-
 def _check_wildcard(path):
     if "*" in path:
         raise RuleError(f"{path}: '*' directory is not allowed")
@@ -203,12 +193,10 @@ class Rule:
                             # not contain one %
                             self.first_target = target
 
-                target = _strip_dot(target)
                 target = rule_to_re(target)
                 self.targets.append(target)
 
         if pattern:
-            pattern = _strip_dot(pattern)
             if _check_pattern_count(pattern) != 1:
                 raise RuleError(f"{pattern}: Pattern should contain a '%'")
 
@@ -221,7 +209,6 @@ class Rule:
             depend = _name_to_str(depend)
             _check_pattern_count(depend)
             _check_wildcard(depend)
-            depend = _strip_dot(depend)
             self.depends.append(depend)
 
         self.uses = []
@@ -229,7 +216,6 @@ class Rule:
             use = _name_to_str(use)
             _check_pattern_count(use)
             _check_wildcard(use)
-            use = _strip_dot(use)
             self.uses.append(use)
 
         self.builder = builder
@@ -553,11 +539,13 @@ class Prod:
     async def run_in_executor(self, func, *args, **kwargs):
         if self.executor:
             loop = asyncio.get_running_loop()
-            return await loop.run_in_executor(
+            ret = await loop.run_in_executor(
                 self.executor, lambda: func(*args, **kwargs)
             )
         else:
-            return func(*args, **kwargs)
+            ret = func(*args, **kwargs)
+
+        return ret
 
     def get_default_target(self):
         return self.rules.select_first_target()
