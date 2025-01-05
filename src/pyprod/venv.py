@@ -11,15 +11,15 @@ import pyprod
 from .utils import flatten
 
 THREADID = threading.get_ident()
-pyprodenv = ".pyprod"
 venvdir = None
 
-PYPRODVENV = ".pyprod"
+PYPRODVENV = "pyprod"
 
 
 def makevenv(conffile):
     global venvdir
-    venvdir = Path(".") / f".{conffile.name}{PYPRODVENV}"
+    major, minor = sys.version_info[:2]
+    venvdir = Path(".") / f".{conffile.name}.{major}.{minor}.{PYPRODVENV}"
     if not venvdir.is_dir():
         venv.main([str(venvdir)])
 
