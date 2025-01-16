@@ -229,8 +229,8 @@ Example:
    .. code-block:: python
    
       run(["echo", "Hello, World!"]) # list style args
-      run(["echo Hello, World"]) # Shell style args
-      run(["echo", "Hello,", "World"]) # Shell style args (automactic concatenation)
+      run("echo Hello, World") # Shell style args
+      run("echo", "Hello,", "World") # Shell style args (automactic concatenation)
       run("echo", ["hello", ["world"]]) # Shell style args (automactic flattening)
    
       files = run("ls", stdout=True).stdout # Capture output
@@ -244,10 +244,10 @@ Example:
    :param args: Command and arguments to execute. If first argument is a list, the first element is the command and the rest are arguments. Sequences specified for args are automatically flattened.
    :type args: str | Path | list[str | Path]
 
-   :echo: Print the command before executing it (default ``True``).
+   :param echo: Print the command before executing it (default ``True``).
    :type echo: bool
 
-   :cwd: Change the current working directory before executing the command.
+   :param cwd: Change the current working directory before executing the command.
    :type shell: str | Path | None
 
    :param check: Raise an exception if the command returns a non-zero exit code (default ``True``).

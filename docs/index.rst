@@ -17,13 +17,13 @@ With PyProd, a traditional Makefile for C can be expressed as a Python script li
 .. code-block:: python
 
     CC = "gcc"
-    CFLAGS = "-I."
+    CFLAGS = "-c -I."
     DEPS = "hello.h"
     OBJS = "hello.o main.o".split()
 
     @rule("%.o", depends=("%.c", DEPS))
     def compile(target, src, *deps):
-        run(CC, "-c -o", target, src, CFLAGS)
+        run(CC, "-o", target, src, CFLAGS)
 
     @rule("hello.exe", depends=OBJS)
     def link(target, *objs):
@@ -34,6 +34,8 @@ With PyProd, a traditional Makefile for C can be expressed as a Python script li
 
     all = "hello.exe"
 
+
+Other examples can be found in the `samples <https://github.com/atsuoishimoto/pyprod/tree/main/samples>`_ directory.
 
 Table of Contents
 --------------------

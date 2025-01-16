@@ -3,7 +3,7 @@
 
 APP = "hello.exe"
 CC = "gcc"
-CFLAGS = "-I."
+CFLAGS = "-c -I."
 DEPS = "hello.h"
 OBJS = "hello.o main.o".split()
 
@@ -15,7 +15,7 @@ def link(target, *src):
 
 @rule("%.o", depends=("%.c", DEPS))
 def compile(target, src, *deps):
-    run(CC, "-c -o", target, src, CFLAGS)
+    run(CC, "-o", target, src, CFLAGS)
 
 
 def clean():
