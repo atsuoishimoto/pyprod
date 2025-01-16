@@ -167,6 +167,8 @@ def _check_wildcard(path):
 
 def _name_to_str(name):
     match name:
+        case Task():
+            return name.name
         case _TaskFunc():
             return name.name
         case Path():
@@ -267,7 +269,6 @@ class Task(Rule):
         self.builder = f
         self._set_funcname(f)
         return _TaskFunc(f, self.name)
-        return f
 
 
 class Rules:
@@ -327,7 +328,6 @@ class Rules:
                     break
 
     def get_dep_names(self, name):
-        assert name
         ret_depends = []
         ret_uses = []
 
@@ -352,6 +352,7 @@ class Rules:
             return depends, uses, dep
 
     def build_tree(self, name, lv=1):
+        assert name
         self.frozen = True
 
         name = _name_to_str(name)
@@ -574,6 +575,10 @@ class Prod:
         for obj in flatten(names):
             if isinstance(obj, str | Path):
                 builds.append(obj)
+            elif isinstance(obj, Task):
+                builds.append(obj.name)
+            elif isinstance(obj, _TaskFunc):
+                builds.append(obj.name)
             elif isinstance(obj, Rule):
                 raise TargetError(f"Invalid target specified: {obj}")
             elif callable(obj):
@@ -657,6 +662,7 @@ class Prod:
             await self.build(uses)
 
         if selected and isinstance(builder, Task):
+            self.built += 1
             await self.run_in_executor(builder.builder, *build_deps)
             return MAX_TS
 
@@ -670,7 +676,7 @@ class Prod:
             logger.debug("%r already exists", name)
 
         if not exists.exists and not selected:
-            raise NoRuleToMakeTargetError("No rule to make target: {name}")
+            raise NoRuleToMakeTargetError(f"No rule to make target: {name}")
 
         elif selected and ((not exists.exists) or (ts >= MAX_TS) or (exists.ts < ts)):
             logger.warning("building: %r", name)
