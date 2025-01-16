@@ -180,6 +180,11 @@ In addition to the ``@rule`` and ``@check`` decorators, PyProd provides several 
 
 The following built-ins are available:
 
+.. py:function:: build(*deps):
+
+   Schedule dependencies. The specified deps are built sequentially after the current build completes.
+
+   :param args: name or functions to be built.
 
 .. py:function:: pip(*args)
 

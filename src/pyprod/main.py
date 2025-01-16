@@ -89,6 +89,7 @@ def main():
 
     params = {}
     targets = []
+
     for target in args.targets:
         if "=" in target:
             name, value = target.split("=", 1)
@@ -110,7 +111,6 @@ def main():
         ret = 0
         for target in targets:
             ret += asyncio.run(prod.start([target]))
-            prod = pyprod.prod.Prod(mod, args.job, params)
 
         if not ret:
             print(f"Nothing to be done for {targets}")

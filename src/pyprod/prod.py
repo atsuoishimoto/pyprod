@@ -181,7 +181,7 @@ def _name_to_str(name):
 
 class Rule:
     def __init__(
-        self, targets, pattern=None, depends=(), uses=(), builder=None, name=None
+        self, targets, pattern=None, depends=(), uses=(), builder=None
     ):
         self.targets = []
         self.first_target = None
@@ -226,7 +226,6 @@ class Rule:
             self.uses.append(use)
 
         self.builder = builder
-        self.name = _name_to_str(name)
 
     def __call__(self, f):
         self.builder = f
@@ -241,18 +240,23 @@ class _TaskFunc:
     def __call__(self, *args, **kwargs):
         return self.f(*args, **kwargs)
 
+def default_builder(self, *args, **kwargs):
+    # default builder
+    pass
 
 class Task(Rule):
     def __init__(self, name, depends, uses, func=None):
         super().__init__(
-            (), pattern=None, depends=depends, uses=uses, builder=func, name=name
+            (), pattern=None, depends=depends, uses=uses, builder=func
         )
+        self.name = _name_to_str(name)
         if name:
             self.targets = [name]
-            self.first_target = True
-
+            self.first_target = self.name
         if func:
             self._set_funcname(func)
+        if not self.builder:
+            self.builder = default_builder
 
     def _set_funcname(self, f):
         if not self.name:
@@ -263,7 +267,7 @@ class Task(Rule):
             self.name = f.__name__
             self.targets = [f.__name__]
 
-        self.first_target = True
+        self.first_target = self.name
 
     def __call__(self, f):
         self.builder = f
@@ -279,6 +283,10 @@ class Rules:
         self.frozen = False
 
     def add_rule(self, targets, pattern=None, depends=(), uses=(), builder=None):
+        if builder:
+            if not callable(builder):
+                raise ValueError(f"{builder} is not callable")
+
         if self.frozen:
             raise RuntimeError("No new rule can be added after initialization")
 
@@ -289,16 +297,22 @@ class Rules:
     def add_task(self, name=None, depends=(), uses=(), func=None):
         if self.frozen:
             raise RuntimeError("No new rule can be added after initialization")
-
         dep = Task(name, depends, uses, func)
         self.rules.append(dep)
         return dep
 
     def rule(self, targets, *, pattern=None, depends=(), uses=()):
+        if not targets:
+            raise ValueError("No target specified")
+
         dep = self.add_rule([targets], pattern, depends, uses, None)
         return dep
 
     def task(self, func=None, *, name=None, depends=(), uses=()):
+        if func:
+            if not callable(func):
+                raise ValueError(f"{func} is not callable")
+
         dep = self.add_task(name, depends, uses, func)
         return dep
 
@@ -506,6 +520,7 @@ class Prod:
 
     def get_module_globals(self):
         globals = {
+            "build": self.build,
             "capture": capture,
             "check": self.checkers.check,
             "environ": Envs(),
@@ -558,41 +573,16 @@ class Prod:
         return self.rules.select_first_target()
 
     async def start(self, deps):
+        self.loop = asyncio.get_running_loop()
         self.built = 0
-        names = []
-        for name in deps:
-            if isinstance(name, str):
-                value = getattr(self.module, name, None)
-                if value:
-                    names.append(value)
-                else:
-                    names.append(name)
-            else:
-                names.append(name)
-
-        builds = []
-        waitings = []
-        for obj in flatten(names):
-            if isinstance(obj, str | Path):
-                builds.append(obj)
-            elif isinstance(obj, Task):
-                builds.append(obj.name)
-            elif isinstance(obj, _TaskFunc):
-                builds.append(obj.name)
-            elif isinstance(obj, Rule):
-                raise TargetError(f"Invalid target specified: {obj}")
-            elif callable(obj):
-                self.built += 1
-                task = asyncio.create_task(self.run_in_executor(obj))
-                waitings.append(task)
-            else:
-                raise TargetError(f"Invalid target specified: {obj}")
-
-        await self.build(builds)
-        await asyncio.gather(*waitings)
+        self.deps = deps[:]
+        while self.deps:
+            dep = self.deps.pop(0)
+            await self.schedule([dep])
+        
         return self.built
 
-    async def build(self, deps):
+    async def schedule(self, deps):
         tasks = []
         waits = []
         for dep in deps:
@@ -644,9 +634,11 @@ class Prod:
             ret = MAX_TS
         return Exists(name, True, ret)
 
+    def build(self, *deps):
+        self.deps[0:0] = [_name_to_str(name) for name in flatten(deps)]
+
     async def run(self, name):  # -> Any | int:
         name = _name_to_str(name)
-
         self.rules.build_tree(name)
         deps, uses = self.rules.get_dep_names(name)
         selected = self.rules.select_builder(name)
@@ -657,9 +649,9 @@ class Prod:
 
         ts = 0
         if deps:
-            ts = await self.build(deps)
+            ts = await self.schedule(deps)
         if uses:
-            await self.build(uses)
+            await self.schedule(uses)
 
         if selected and isinstance(builder, Task):
             self.built += 1

@@ -23,8 +23,11 @@ def build_c(target, src, *commons):
     run("cat", *commons, src, ">", target)
 
 
+@task
 def clean():
     run("rm", "-rf", BUILDDIR, BUILDFILES, DOC)
 
 
-all = DOC
+@task
+def rebuild():
+    build(clean, DOC)

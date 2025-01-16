@@ -18,8 +18,10 @@ def compile(target, src, *deps):
     run(CC, "-o", target, src, CFLAGS)
 
 
+@task
 def clean():
     run("rm", "-rf", OBJS, APP)
 
-
-all = APP
+@task
+def rebuild():
+    build(clean, APP)

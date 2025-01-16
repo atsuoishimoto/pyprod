@@ -60,7 +60,7 @@ async def test_prod(tmp_path, jobs):
     build_tmp_path(tmp_path)
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", jobs)
-        await p.start(["all"])
+        await p.start(["app.exe"])
 
     assert (tmp_path / "app.exe").is_file()
     assert (tmp_path / "objs").is_dir()
@@ -71,14 +71,14 @@ async def test_prod(tmp_path, jobs):
     mtime = (tmp_path / "app.exe").stat().st_mtime
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.start(["all"])
+        await p.start(["app.exe"])
 
     assert mtime == (tmp_path / "app.exe").stat().st_mtime
 
     (tmp_path / "a.c").write_text("aa")
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.start(["all"])
+        await p.start(["app.exe"])
 
     assert mtime < (tmp_path / "app.exe").stat().st_mtime
 
@@ -102,15 +102,13 @@ def build_app(target, a, b):
     assert isinstance(a, str)
     assert isinstance(b, str)
     Path(target).write_text(f"{target}, {a}, {b}")
-
-all = Path("app.exe")
 """
 
     Path(tmp_path / "Prodfile.py").write_text(src)
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.start(["all"])
+        await p.start(["app.exe"])
 
     assert (tmp_path / "app.exe").read_text() == "app.exe, a.o, b.o"
     assert (tmp_path / "a.o").read_text() == "a.o"
@@ -137,15 +135,13 @@ def build_app(target, src):
     assert isinstance(target, str)
     assert isinstance(src, str)
     Path(target).write_text("app.exe")
-
-all = Path("app.exe")
 """
 
     Path(tmp_path / "Prodfile.py").write_text(src)
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.start(["all"])
+        await p.start(["app.exe"])
 
     assert (tmp_path / "app.exe").read_text() == "app.exe"
     assert (tmp_path / "a.o").read_text() == "a"
@@ -170,7 +166,7 @@ def check(b):
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.build(["a"])
+        await p.start(["a"])
 
     assert (tmp_path / "a").read_text() == "a"
 
@@ -194,7 +190,7 @@ def check(b):
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.build(["a"])
+        await p.start(["a"])
 
     assert (tmp_path / "a").read_text() == ""
 
@@ -214,7 +210,7 @@ def build(target, src):
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
         with pytest.raises(prod.NoRuleToMakeTargetError):
-            await p.build(["a"])
+            await p.start(["a"])
 
 
 @pytest.mark.asyncio
@@ -236,7 +232,7 @@ def task1():
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.build(["task1"])
+        await p.start(["task1"])
 
     assert "run-task1" == capsys.readouterr().out.strip()
 
@@ -252,7 +248,7 @@ def task1():
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.build(["task2"])
+        await p.start(["task2"])
 
     assert "run-task2" == capsys.readouterr().out.strip()
 
@@ -272,7 +268,7 @@ def task1(file1):
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.build(["task1"])
+        await p.start(["task1"])
 
     assert "run-task1-file1" == capsys.readouterr().out.strip()
     assert (tmp_path / "file1").read_text() == "a"
@@ -293,7 +289,7 @@ def task1():
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.build(["task1"])
+        await p.start(["task1"])
 
     assert "run-task1" == capsys.readouterr().out.strip()
     assert (tmp_path / "file1").read_text() == "a"
@@ -310,7 +306,7 @@ async def test_task_depended(tmp_path, capsys):
     p.rules.add_task("task1", (), (), lambda: print("run-task1"))
 
     with chdir(tmp_path):
-        await p.build(["file1"])
+        await p.start(["file1"])
 
     assert "run-task1" == capsys.readouterr().out.strip()
     assert (tmp_path / "file1").read_text() == "a"
@@ -332,7 +328,32 @@ def file1(target):
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.build(["file1"])
+        await p.start(["file1"])
 
     assert "run-task1" == capsys.readouterr().out.strip()
     assert (tmp_path / "file1").read_text() == "a"
+
+
+@pytest.mark.asyncio
+async def test_submit(tmp_path, capsys):
+    src = """
+@rule("a.c")
+def build_a(src):
+    Path(src).write_text("hello")
+
+@task
+def task1():
+    print("task1")
+
+@task
+def task2():
+    build("a.c", task1)
+"""
+    (tmp_path / "Prodfile.py").write_text(src)
+
+    with chdir(tmp_path):
+        p = prod.Prod("Prodfile.py", 4)
+        await p.start(["task2"])
+
+    assert "task1" == capsys.readouterr().out.strip()
+    assert (tmp_path / "a.c").read_text() == "hello"
