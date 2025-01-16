@@ -7,8 +7,8 @@ from pyprod import prod
 
 def test_depends():
     rules = prod.Rules()
-    rules.rule(target=["a", ["b"]], depends=["e", ["f"]], uses=["g", ["h"]])
-    rules.rule(target=["a"], depends=["e", "h"], uses=["g", "i"])
+    rules.rule(targets=["a", ["b"]], depends=["e", ["f"]], uses=["g", ["h"]])
+    rules.rule(targets=["a"], depends=["e", "h"], uses=["g", "i"])
 
     depends, uses = rules.get_dep_names("a")
     assert set(depends) == set(["e", "f", "h"])
@@ -17,11 +17,11 @@ def test_depends():
 
 def test_tree():
     rules = prod.Rules()
-    rules.rule(target="a", depends=["b", "c"], uses=["d", "e"])
-    rules.rule(target="b", depends="c")
-    rules.rule(target="c", depends="d")
-    rules.rule(target="d", depends="e")
-    rules.rule(target="e")
+    rules.rule(targets="a", depends=["b", "c"], uses=["d", "e"])
+    rules.rule(targets="b", depends="c")
+    rules.rule(targets="c", depends="d")
+    rules.rule(targets="d", depends="e")
+    rules.rule(targets="e")
 
     rules.build_tree("a")
 
@@ -36,8 +36,8 @@ def test_tree():
 
 def test_circular():
     rules = prod.Rules()
-    rules.rule(target="a", depends="b")
-    rules.rule(target="b", depends="a")
+    rules.rule(targets="a", depends="b")
+    rules.rule(targets="b", depends="a")
 
     with pytest.raises(prod.CircularReferenceError):
         rules.build_tree("a")
@@ -46,11 +46,11 @@ def test_circular():
 def test_builder():
     rules = prod.Rules()
 
-    @rules.rule(target="a", depends=("b", "c"), uses="d")
+    @rules.rule(targets="a", depends=("b", "c"), uses="d")
     def f():
         pass
 
-    @rules.rule(target="b", depends="c")
+    @rules.rule(targets="b", depends="c")
     def g():
         pass
 
@@ -62,7 +62,7 @@ def test_builder():
 def test_stem():
     rules = prod.Rules()
 
-    @rules.rule(target="%.o", depends="%.c")
+    @rules.rule(targets="%.o", depends="%.c")
     def f():
         pass
 
@@ -73,7 +73,7 @@ def test_stem():
 def test_stem_wildcard():
     rules = prod.Rules()
 
-    @rules.rule(target="dir/*/%.o", depends="%.c")
+    @rules.rule(targets="dir/*/%.o", depends="%.c")
     def f():
         pass
 
@@ -84,7 +84,7 @@ def test_stem_wildcard():
 def test_stem_escape():
     rules = prod.Rules()
 
-    @rules.rule(target="%.%%", depends="%.%%")
+    @rules.rule(targets="%.%%", depends="%.%%")
     def f():
         pass
 
@@ -97,11 +97,11 @@ def test_stem_error():
 
     with pytest.raises(prod.RuleError):
 
-        @rules.rule(target="%.%", depends="%.c")
+        @rules.rule(targets="%.%", depends="%.c")
         def f():
             pass
 
-    @rules.rule(target="%.xxx", depends="%")
+    @rules.rule(targets="%.xxx", depends="%")
     def f():
         pass
 

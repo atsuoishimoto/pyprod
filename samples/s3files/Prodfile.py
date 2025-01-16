@@ -17,7 +17,7 @@ def parse_s3url(s3url):
     return parsed.netloc, parsed.path.lstrip("/")
 
 
-@rule(target=TARGET, pattern="*/%.txt", depends="%.txt")
+@rule(targets=TARGET, pattern="*/%.txt", depends="%.txt")
 def copyfile(target, src):
     """Copies a file to an S3 bucket."""
     bucket, key = parse_s3url(target)

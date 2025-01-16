@@ -25,11 +25,11 @@ OBJFILES = [(OBJDIR / p).with_suffix(".o") for p in SRCFILES]
 HEADERS = "inc1.h inc2.h".split()
 all = APP
 
-@rule(target=OBJDIR)
+@rule(targets=OBJDIR)
 def build_dir(target):
     run("mkdir ", target)
 
-@rule(target=OBJDIR / "%.o", depends=("%.c",HEADERS), uses=OBJDIR)
+@rule(targets=OBJDIR / "%.o", depends=("%.c",HEADERS), uses=OBJDIR)
 def build_c(target, *src):
     run("cp", src[0], target)
 
@@ -86,12 +86,12 @@ async def test_prod(tmp_path, jobs):
 @pytest.mark.asyncio
 async def test_pattern(tmp_path):
     src = """
-@rule(target=("a.o", "b.o"), pattern=Path("%.o"), depends=Path("%.c"))
+@rule(targets=("a.o", "b.o"), pattern=Path("%.o"), depends=Path("%.c"))
 def build(target, src):
     assert isinstance(target, str)
     Path(target).write_text(str(target))
 
-@rule(target=Path("%.c"))
+@rule(targets=Path("%.c"))
 def build_c(target):
     assert isinstance(target, str)
     Path(target).write_text(str(target))
@@ -122,12 +122,12 @@ all = Path("app.exe")
 @pytest.mark.asyncio
 async def test_preserve_pathobj(tmp_path):
     src = """
-@rule(target=Path("%.o"), depends=Path("%.c"))
+@rule(targets=Path("%.o"), depends=Path("%.c"))
 def build(target, src):
     assert isinstance(target, str)
     Path(target).write_text("a")
 
-@rule(target=Path("%.c"))
+@rule(targets=Path("%.c"))
 def build_c(target):
     assert isinstance(target, str)
     Path(target).write_text(str(target))
@@ -156,11 +156,11 @@ all = Path("app.exe")
 async def test_checker_update(tmp_path):
     src = """
 import datetime
-@rule(target="a", depends="b")
+@rule(targets="a", depends="b")
 def build(target, src):
     Path(target).write_text("a")
 
-@check(target="b")
+@check(targets="b")
 def check(b):
     return datetime.datetime(2099,1,1,0,0,0)
 """
@@ -179,11 +179,11 @@ def check(b):
 async def test_checker_no_update(tmp_path):
     src = """
 import datetime
-@rule(target="a", depends="b")
+@rule(targets="a", depends="b")
 def build(target, src):
     Path(target).write_text("a")
 
-@check(target="b")
+@check(targets="b")
 def check(b):
     assert b == "b"
     return datetime.datetime(1999,1,1,0,0,0)
@@ -203,7 +203,7 @@ def check(b):
 async def test_checker_no_file(tmp_path):
     src = """
 import datetime
-@rule(target="a", depends="b")
+@rule(targets="a", depends="b")
 def build(target, src):
     Path(target).write_text("a")
 """
@@ -260,7 +260,7 @@ def task1():
 @pytest.mark.asyncio
 async def test_task_dep(tmp_path, capsys):
     src = """
-@rule(target="file1")
+@rule(targets="file1")
 def file1(target):
     Path(target).write_text("a")
 
@@ -281,7 +281,7 @@ def task1(file1):
 @pytest.mark.asyncio
 async def test_task_uses(tmp_path, capsys):
     src = """
-@rule(target="file1")
+@rule(targets="file1")
 def file1(target):
     Path(target).write_text("a")
 
@@ -323,7 +323,7 @@ async def test_task_depended_byfunc(tmp_path, capsys):
 def task1():
     print(f"run-task1")
 
-@rule(target="file1", uses="task1")
+@rule(targets="file1", uses="task1")
 def file1(target):
     Path(target).write_text("a")
 

@@ -294,8 +294,8 @@ class Rules:
         self.rules.append(dep)
         return dep
 
-    def rule(self, target, *, pattern=None, depends=(), uses=()):
-        dep = self.add_rule([target], pattern, depends, uses, None)
+    def rule(self, targets, *, pattern=None, depends=(), uses=()):
+        dep = self.add_rule([targets], pattern, depends, uses, None)
         return dep
 
     def task(self, func=None, *, name=None, depends=(), uses=()):
@@ -392,13 +392,13 @@ class Checkers:
                 if fnmatch(name, target):
                     return f
 
-    def add_check(self, target, f):
-        target = list(map(_name_to_str, flatten(target or ())))
-        self.checkers.append((target, f))
+    def add_check(self, targets, f):
+        targets = list(map(_name_to_str, flatten(targets or ())))
+        self.checkers.append((targets, f))
 
-    def check(self, target):
+    def check(self, targets):
         def deco(f):
-            self.add_check(target, f)
+            self.add_check(targets, f)
             return f
 
         return deco
