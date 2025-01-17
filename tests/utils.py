@@ -1,6 +1,7 @@
-from pathlib import Path
 import os
 from contextlib import contextmanager
+from pathlib import Path
+
 
 @contextmanager
 def chdir(dir):
@@ -10,4 +11,3 @@ def chdir(dir):
         yield
     finally:
         os.chdir(old)
-

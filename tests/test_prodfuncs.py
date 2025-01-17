@@ -1,5 +1,7 @@
 import pytest
-from pyprod import prod, main
+
+from pyprod import main, prod
+
 from .utils import chdir
 
 
@@ -58,6 +60,7 @@ def test_quote():
 def test_suote():
     assert prod.squote(["abc", ["12 3"]]) == "'abc 12 3'"
 
+
 @pytest.mark.asyncio
 async def test_build(tmp_path, capsys):
     src = """
@@ -80,4 +83,3 @@ def task2():
 
     assert "task1" == capsys.readouterr().out.strip()
     assert (tmp_path / "a.c").read_text() == "hello"
-

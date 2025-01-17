@@ -180,9 +180,7 @@ def _name_to_str(name):
 
 
 class Rule:
-    def __init__(
-        self, targets, pattern=None, depends=(), uses=(), builder=None
-    ):
+    def __init__(self, targets, pattern=None, depends=(), uses=(), builder=None):
         self.targets = []
         self.first_target = None
         if targets:
@@ -240,15 +238,15 @@ class _TaskFunc:
     def __call__(self, *args, **kwargs):
         return self.f(*args, **kwargs)
 
+
 def default_builder(self, *args, **kwargs):
     # default builder
     pass
 
+
 class Task(Rule):
     def __init__(self, name, depends, uses, func=None):
-        super().__init__(
-            (), pattern=None, depends=depends, uses=uses, builder=func
-        )
+        super().__init__((), pattern=None, depends=depends, uses=uses, builder=func)
         self.name = _name_to_str(name)
         if name:
             self.targets = [name]
@@ -579,7 +577,7 @@ class Prod:
         while self.deps:
             dep = self.deps.pop(0)
             await self.schedule([dep])
-        
+
         return self.built
 
     async def schedule(self, deps):
@@ -670,7 +668,12 @@ class Prod:
         if not exists.exists and not selected:
             raise NoRuleToMakeTargetError(f"No rule to make target: {name}")
 
-        elif selected and ((not exists.exists) or (ts >= MAX_TS) or (exists.ts < ts) or pyprod.args.rebuild):
+        elif selected and (
+            (not exists.exists)
+            or (ts >= MAX_TS)
+            or (exists.ts < ts)
+            or pyprod.args.rebuild
+        ):
             logger.warning("building: %r", name)
             await self.run_in_executor(builder.builder, name, *build_deps)
             self.built += 1

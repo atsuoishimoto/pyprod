@@ -41,10 +41,12 @@ def make_html(target, src, template, *_):
 def builds(target):
     os.makedirs(target)
 
+
 @task
 def clean():
     shutil.rmtree(BUILD, ignore_errors=True)
     PDF.unlink(missing_ok=True)
+
 
 @task
 def rebuild():

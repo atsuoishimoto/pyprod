@@ -33,7 +33,9 @@ parser.add_argument(
     help="Allow up to N jobs to run simultaneously (default: 1)",
 )
 
-parser.add_argument("-r", "--rebuild", dest="rebuild", action='store_true', help="Rebuild all")
+parser.add_argument(
+    "-r", "--rebuild", dest="rebuild", action="store_true", help="Rebuild all"
+)
 parser.add_argument(
     "-v",
     dest="verbose",
@@ -55,9 +57,11 @@ def print_exc(e):
         case _:
             logger.exception("Terminated by exception")
 
+
 def init_args(args=None):
     args = pyprod.args = parser.parse_args(args)
     return args
+
 
 def main():
     args = init_args()

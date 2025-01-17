@@ -22,6 +22,7 @@ def compile(target, src, *deps):
 def clean():
     run("rm", "-rf", OBJS, APP)
 
+
 @task
 def rebuild():
     build(clean, APP)

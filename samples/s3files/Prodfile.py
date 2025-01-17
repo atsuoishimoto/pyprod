@@ -35,17 +35,20 @@ def check_s3file(s3url):
             return
         raise
 
+
 @task
 def clean():
     """Deletes an S3 file."""
     bucket, key = parse_s3url(TARGET)
     s3.delete_object(Bucket=bucket, Key=key)
 
+
 @task
 def ls():
     """Lists the contents of an S3 bucket."""
     bucket, key = parse_s3url(TARGET)
     run("aws s3 ls", bucket)
+
 
 @task
 def rebuild():

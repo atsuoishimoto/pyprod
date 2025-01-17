@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from pyprod import prod, main
-from .utils import chdir
+from pyprod import main, prod
 
+from .utils import chdir
 
 src = """
 APP = "app.exe"
@@ -348,4 +348,3 @@ def check_b(name):
         await p.start(["a"])
 
     assert "build" == capsys.readouterr().out.strip()
-
