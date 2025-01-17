@@ -1,4 +1,6 @@
-from pyprod import prod
+import pytest
+from pyprod import prod, main
+from .utils import chdir
 
 
 def test_run():
@@ -55,3 +57,27 @@ def test_quote():
 
 def test_suote():
     assert prod.squote(["abc", ["12 3"]]) == "'abc 12 3'"
+
+@pytest.mark.asyncio
+async def test_build(tmp_path, capsys):
+    src = """
+@rule("a.c")
+def build_a(src):
+    Path(src).write_text("hello")
+
+@task
+def task1():
+    print("task1")
+
+@task
+def task2():
+    build("a.c", task1)
+"""
+    (tmp_path / "Prodfile.py").write_text(src)
+    with chdir(tmp_path):
+        p = prod.Prod("Prodfile.py", 4)
+        await p.start(["task2"])
+
+    assert "task1" == capsys.readouterr().out.strip()
+    assert (tmp_path / "a.c").read_text() == "hello"
+

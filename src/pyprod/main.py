@@ -15,6 +15,13 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
+    "-C",
+    "--directory",
+    dest="directory",
+    help="Change to DIRECTORY before performing any operations",
+)
+
+parser.add_argument(
     "-f", "--file", help="Use FILE as the Prodfile (default: 'PRODFILE.py')"
 )
 
@@ -26,13 +33,7 @@ parser.add_argument(
     help="Allow up to N jobs to run simultaneously (default: 1)",
 )
 
-parser.add_argument(
-    "-C",
-    "--directory",
-    dest="directory",
-    help="Change to DIRECTORY before performing any operations",
-)
-
+parser.add_argument("-r", "--rebuild", dest="rebuild", action='store_true', help="Rebuild all")
 parser.add_argument(
     "-v",
     dest="verbose",
@@ -54,9 +55,12 @@ def print_exc(e):
         case _:
             logger.exception("Terminated by exception")
 
+def init_args(args=None):
+    args = pyprod.args = parser.parse_args(args)
+    return args
 
 def main():
-    args = pyprod.args = parser.parse_args()
+    args = init_args()
     pyprod.verbose = args.verbose
     chdir = args.directory
     if chdir:

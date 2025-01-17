@@ -4,17 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from pyprod import prod
-
-
-@contextmanager
-def chdir(dir):
-    old = Path.cwd()
-    os.chdir(dir)
-    try:
-        yield
-    finally:
-        os.chdir(old)
+from pyprod import prod, main
+from .utils import chdir
 
 
 src = """
@@ -335,25 +326,26 @@ def file1(target):
 
 
 @pytest.mark.asyncio
-async def test_submit(tmp_path, capsys):
+async def test_rebuild(tmp_path, capsys, mocker):
     src = """
-@rule("a.c")
-def build_a(src):
-    Path(src).write_text("hello")
 
-@task
-def task1():
-    print("task1")
+@rule("a", depends="b")
+def build_a(src, b):
+    print("build")
 
-@task
-def task2():
-    build("a.c", task1)
+@check("a")
+def check_b(name):
+    return 2
+
+@check("b")
+def check_b(name):
+    return 1
 """
     (tmp_path / "Prodfile.py").write_text(src)
-
+    main.init_args(["-r"])
     with chdir(tmp_path):
-        p = prod.Prod("Prodfile.py", 4)
-        await p.start(["task2"])
+        p = prod.Prod("Prodfile.py", 1)
+        await p.start(["a"])
 
-    assert "task1" == capsys.readouterr().out.strip()
-    assert (tmp_path / "a.c").read_text() == "hello"
+    assert "build" == capsys.readouterr().out.strip()
+

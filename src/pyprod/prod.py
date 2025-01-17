@@ -670,7 +670,7 @@ class Prod:
         if not exists.exists and not selected:
             raise NoRuleToMakeTargetError(f"No rule to make target: {name}")
 
-        elif selected and ((not exists.exists) or (ts >= MAX_TS) or (exists.ts < ts)):
+        elif selected and ((not exists.exists) or (ts >= MAX_TS) or (exists.ts < ts) or pyprod.args.rebuild):
             logger.warning("building: %r", name)
             await self.run_in_executor(builder.builder, name, *build_deps)
             self.built += 1
