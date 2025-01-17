@@ -567,6 +567,28 @@ class Prod:
 
         return ret
 
+
+    async def is_exists(self, name):
+        checker = self.checkers.get_checker(name)
+        try:
+            if checker:
+                ret = await self.run_in_executor(checker, name)
+            else:
+                ret = await self.run_in_executor(is_file_exists, name)
+        except FileNotFoundError:
+            ret = False
+
+        if not ret:
+            return Exists(name, False)
+        if isinstance(ret, datetime.datetime):
+            ret = ret.timestamp()
+        if ret < 0:
+            ret = MAX_TS
+        return Exists(name, True, ret)
+
+    def build(self, *deps):
+        self.deps[0:0] = [_name_to_str(name) for name in flatten(deps)]
+
     def get_default_target(self):
         return self.rules.select_first_target()
 
@@ -614,27 +636,6 @@ class Prod:
             return max(ts)
         return 0
 
-    async def is_exists(self, name):
-        checker = self.checkers.get_checker(name)
-        try:
-            if checker:
-                ret = await self.run_in_executor(checker, name)
-            else:
-                ret = await self.run_in_executor(is_file_exists, name)
-        except FileNotFoundError:
-            ret = False
-
-        if not ret:
-            return Exists(name, False)
-        if isinstance(ret, datetime.datetime):
-            ret = ret.timestamp()
-        if ret < 0:
-            ret = MAX_TS
-        return Exists(name, True, ret)
-
-    def build(self, *deps):
-        self.deps[0:0] = [_name_to_str(name) for name in flatten(deps)]
-
     async def run(self, name):  # -> Any | int:
         name = _name_to_str(name)
         self.rules.build_tree(name)
@@ -647,9 +648,13 @@ class Prod:
 
         ts = 0
         if deps:
+            # todo: create task
             ts = await self.schedule(deps)
         if uses:
+            # todo: create task
             await self.schedule(uses)
+
+        # todo: depsとusesをここで待つ
 
         if selected and isinstance(builder, Task):
             self.built += 1
