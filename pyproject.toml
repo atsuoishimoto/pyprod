@@ -1,6 +1,6 @@
 [project]
 name = "PyProd"
-version = "0.4.0"
+dynamic = ["version"]
 description = "PyProd: More Makeable than Make"
 readme = "README.rst"
 requires-python = ">=3.10"
@@ -24,6 +24,9 @@ pyprod = "pyprod.main:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/pyprod/__init__.py"
 
 [dependency-groups]
 dev = [
