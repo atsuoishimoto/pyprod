@@ -609,18 +609,19 @@ class Prod:
             if dep not in self.buildings:
                 ev = asyncio.Event()
                 self.buildings[dep] = ev
-                task = self.run(dep)
-                tasks.append((dep, task))
+                coro = self.run(dep)
+                tasks.append((dep, coro))
                 waits.append(ev)
             else:
                 obj = self.buildings[dep]
                 if isinstance(obj, asyncio.Event):
                     waits.append(obj)
 
-        for dep, task in tasks:
+        results = await asyncio.gather(*(coro for _, coro in tasks))
+        for ret, (dep, coro) in zip(results, tasks):
             ev = self.buildings[dep]
             try:
-                self.buildings[dep] = await task
+                self.buildings[dep] = ret
             finally:
                 ev.set()
 
@@ -646,15 +647,18 @@ class Prod:
             deps = deps + build_deps
             uses = uses + build_uses
 
+        tasks = []
+        if deps:
+            deps_task = asyncio.create_task(self.schedule(deps))
+            tasks.append(deps_task)
+        if uses:
+            uses_task = self.schedule(uses)
+            tasks.append(uses_task)
+
+        await asyncio.gather(*tasks)
         ts = 0
         if deps:
-            # todo: create task
-            ts = await self.schedule(deps)
-        if uses:
-            # todo: create task
-            await self.schedule(uses)
-
-        # todo: depsとusesをここで待つ
+            ts = deps_task.result()
 
         if selected and isinstance(builder, Task):
             self.built += 1
