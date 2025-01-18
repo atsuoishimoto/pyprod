@@ -12,7 +12,9 @@ classifiers = [
     "Environment :: Console",
     "Topic :: Software Development :: Build Tools",
 ]
-dependencies = []
+dependencies = [
+    "pytest>=8.3.4",
+]
 
 [project.urls]
 Homepage = "https://github.com/atsuoishimoto/pyprod"

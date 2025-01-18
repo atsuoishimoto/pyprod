@@ -16,6 +16,7 @@ from collections.abc import Collection
 from dataclasses import dataclass, field
 from fnmatch import fnmatch, translate
 from pathlib import Path
+from functools import wraps
 
 import pyprod
 
@@ -175,6 +176,8 @@ def _name_to_str(name):
             return str(name)
         case str():
             return name
+        case _:
+            raise ValueError(f"Invalid dependency name: {name}")
 
     return name
 
@@ -247,10 +250,14 @@ def default_builder(self, *args, **kwargs):
 class Task(Rule):
     def __init__(self, name, depends, uses, func=None):
         super().__init__((), pattern=None, depends=depends, uses=uses, builder=func)
-        self.name = _name_to_str(name)
         if name:
-            self.targets = [name]
-            self.first_target = self.name
+            self.name = _name_to_str(name)
+            if name:
+                self.targets = [name]
+                self.first_target = self.name
+        else:
+            self.name = None
+
         if func:
             self._set_funcname(func)
         if not self.builder:
