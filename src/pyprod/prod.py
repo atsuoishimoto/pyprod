@@ -249,8 +249,8 @@ def default_builder(*args, **kwargs):
 
 
 class Task(Rule):
-    def __init__(self, name, depends, uses, default, func=None):
-        super().__init__((), pattern=None, depends=depends, uses=uses, builder=func)
+    def __init__(self, name, uses, default, func=None):
+        super().__init__((), pattern=None, depends=(), uses=uses, builder=func)
         if name:
             self.name = _name_to_str(name)
             if name:
@@ -301,10 +301,10 @@ class Rules:
         self.rules.append(dep)
         return dep
 
-    def add_task(self, name=None, depends=(), uses=(), default=False, func=None):
+    def add_task(self, name=None, uses=(), default=False, func=None):
         if self.frozen:
             raise RuntimeError("No new rule can be added after initialization")
-        dep = Task(name, depends, uses, default, func)
+        dep = Task(name, uses, default, func)
         self.rules.append(dep)
         return dep
 
@@ -315,12 +315,12 @@ class Rules:
         dep = self.add_rule([targets], pattern, depends, uses, None)
         return dep
 
-    def task(self, func=None, *, name=None, depends=(), uses=(), default=False):
+    def task(self, func=None, *, name=None, uses=(), default=False):
         if func:
             if not callable(func):
                 raise ValueError(f"{func} is not callable")
 
-        dep = self.add_task(name, depends, uses, default, func)
+        dep = self.add_task(name, uses, default, func)
         return dep
 
     def iter_rule(self, name):

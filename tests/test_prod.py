@@ -245,27 +245,6 @@ def task1():
 
 
 @pytest.mark.asyncio
-async def test_task_dep(tmp_path, capsys):
-    src = """
-@rule(targets="file1")
-def file1(target):
-    Path(target).write_text("a")
-
-@task(depends="file1")
-def task1(file1):
-    print(f"run-task1-{file1}")
-"""
-    (tmp_path / "Prodfile.py").write_text(src)
-
-    with chdir(tmp_path):
-        p = prod.Prod("Prodfile.py", 4)
-        await p.start(["task1"])
-
-    assert "run-task1-file1" == capsys.readouterr().out.strip()
-    assert (tmp_path / "file1").read_text() == "a"
-
-
-@pytest.mark.asyncio
 async def test_task_uses(tmp_path, capsys):
     src = """
 @rule(targets="file1")
@@ -294,7 +273,7 @@ async def test_task_uses_2(tmp_path, capsys):
         uses=["task1"],
         builder=lambda target: Path(target).write_text("a"),
     )
-    p.rules.add_task("task1", (), (), False, lambda: print("run-task1"))
+    p.rules.add_task("task1", (), False, lambda: print("run-task1"))
 
     with chdir(tmp_path):
         await p.start(["file1"])
@@ -310,7 +289,7 @@ async def test_task_uses_notfound(tmp_path, capsys):
         uses=["task2"],
         builder=lambda target: Path(target).write_text("a"),
     )
-    p.rules.add_task("task1", (), (), False, lambda: print("run-task1"))
+    p.rules.add_task("task1", (), False, lambda: print("run-task1"))
 
     with chdir(tmp_path):
         with pytest.raises(prod.NoRuleToMakeTargetError):
