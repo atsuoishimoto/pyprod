@@ -42,6 +42,15 @@ def pip(*args):
         makevenv(pyprod.modulefile)
     args = flatten(args)
     subprocess.run(
-        [venvdir / "bin/python", "-m", "pip", "--no-input", "install", *args],
+        [
+            venvdir / "bin/python",
+            "-m",
+            "pip",
+            "--disable-pip-version-check",
+            "--no-input",
+            "install",
+            "-q",
+            *args,
+        ],
         check=True,
     )

@@ -22,7 +22,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-f", "--file", help="Use FILE as the Prodfile (default: 'PRODFILE.py')"
+    "-f", "--file", help="Use FILE as the Prodfile (default: 'Prodfile.py')"
 )
 
 parser.add_argument(

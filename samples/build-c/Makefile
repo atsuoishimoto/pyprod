@@ -7,7 +7,7 @@ OBJS = main.o hello.o
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-hello.exe a.x: $(OBJS)
+hello.exe: $(OBJS)
 	$(CC) -o $@ $^
 
 clean:

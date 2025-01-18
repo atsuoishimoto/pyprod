@@ -14,7 +14,7 @@ options:
   -h, --help            show this help message and exit
   -C, --directory DIRECTORY
                         Change to DIRECTORY before performing any operations
-  -f, --file FILE       Use FILE as the Prodfile (default: 'PRODFILE.py')
+  -f, --file FILE       Use FILE as the Prodfile (default: 'Prodfile.py')
   -j, --job JOB         Allow up to N jobs to run simultaneously (default: 1)
   -r, --rebuild         Rebuild all
   -v                    Increase verbosity level (default: 0)

@@ -15,8 +15,8 @@ from collections import defaultdict
 from collections.abc import Collection
 from dataclasses import dataclass, field
 from fnmatch import fnmatch, translate
-from pathlib import Path
 from functools import wraps
+from pathlib import Path
 
 import pyprod
 
@@ -185,6 +185,7 @@ def _name_to_str(name):
 class Rule:
     def __init__(self, targets, pattern=None, depends=(), uses=(), builder=None):
         self.targets = []
+        self.default = False
         self.first_target = None
         if targets:
             for target in flatten(targets):
@@ -242,13 +243,13 @@ class _TaskFunc:
         return self.f(*args, **kwargs)
 
 
-def default_builder(self, *args, **kwargs):
+def default_builder(*args, **kwargs):
     # default builder
     pass
 
 
 class Task(Rule):
-    def __init__(self, name, depends, uses, func=None):
+    def __init__(self, name, depends, uses, default, func=None):
         super().__init__((), pattern=None, depends=depends, uses=uses, builder=func)
         if name:
             self.name = _name_to_str(name)
@@ -258,6 +259,7 @@ class Task(Rule):
         else:
             self.name = None
 
+        self.default = default
         if func:
             self._set_funcname(func)
         if not self.builder:
@@ -299,10 +301,10 @@ class Rules:
         self.rules.append(dep)
         return dep
 
-    def add_task(self, name=None, depends=(), uses=(), func=None):
+    def add_task(self, name=None, depends=(), uses=(), default=False, func=None):
         if self.frozen:
             raise RuntimeError("No new rule can be added after initialization")
-        dep = Task(name, depends, uses, func)
+        dep = Task(name, depends, uses, default, func)
         self.rules.append(dep)
         return dep
 
@@ -313,12 +315,12 @@ class Rules:
         dep = self.add_rule([targets], pattern, depends, uses, None)
         return dep
 
-    def task(self, func=None, *, name=None, depends=(), uses=()):
+    def task(self, func=None, *, name=None, depends=(), uses=(), default=False):
         if func:
             if not callable(func):
                 raise ValueError(f"{func} is not callable")
 
-        dep = self.add_task(name, depends, uses, func)
+        dep = self.add_task(name, depends, uses, default, func)
         return dep
 
     def iter_rule(self, name):
@@ -361,6 +363,9 @@ class Rules:
 
     def select_first_target(self):
         for dep in self.rules:
+            if dep.default:
+                return dep.name
+
             if dep.first_target:
                 return dep.first_target
 
@@ -574,7 +579,6 @@ class Prod:
 
         return ret
 
-
     async def is_exists(self, name):
         checker = self.checkers.get_checker(name)
         try:
@@ -625,7 +629,7 @@ class Prod:
                     waits.append(obj)
 
         results = await asyncio.gather(*(coro for _, coro in tasks))
-        for ret, (dep, coro) in zip(results, tasks):
+        for ret, (dep, _) in zip(results, tasks):
             ev = self.buildings[dep]
             try:
                 self.buildings[dep] = ret

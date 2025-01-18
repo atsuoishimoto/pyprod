@@ -142,7 +142,7 @@ Task definition
 
 A task is similar to a rule but does not have a target and is always executed when it is depended upon.
 
-.. py:function:: @task(*, name=None, depends=(), uses=())
+.. py:function:: @task(*, name=None, depends=(), uses=(), default=False)
 
    Defines a task to be executed.
 
@@ -155,6 +155,7 @@ A task is similar to a rule but does not have a target and is always executed wh
    :param uses: Specify the dependencies of the target file. Unline the ``depends`` parameter, ``uses`` are not passed to the task function.
    :type uses: str | Path | list[str | Path]
 
+   :param default: If True, this task will be executed when no target is specified in the command-line arguments.
 
 .. code-block:: python
 

@@ -15,7 +15,7 @@ def build_app(target, *src):
 
 @rule(BUILDDIR)
 def build_dir(target):
-    run("mkdir", target)
+    run("mkdir -p", target)
 
 
 @rule(BUILDDIR / "%.o", depends=("%.txt", COMMON), uses=BUILDDIR)
