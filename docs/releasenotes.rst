@@ -1,6 +1,13 @@
 Release Notes
 ================
 
+0.5.0 (2025-
+-----------------------------
+
+- Added ``default`` to the ``@task``.
+- Removed ``depends`` from thr ``@task``.
+
+
 0.4.0 (2025-1-17)
 -------------------------
 - Swapped the behavior of quote() and squote() to make their naming more intuitive.
