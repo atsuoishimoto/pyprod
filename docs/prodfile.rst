@@ -178,24 +178,32 @@ In addition to the ``@rule`` and ``@check`` decorators, PyProd provides several 
 
 The following built-ins are available:
 
-.. py:function:: build(*deps):
+
+.. py:function:: build(*deps)
 
    Schedule dependencies. The specified deps are built sequentially after the current build completes.
 
-   :param args: name or functions to be built.
+   :param deps: name of dependencies to be built.
+
+   Example:
+
+   .. code-block:: python
+
+      @task
+      def rebuild():
+          build(clean, EXE)
 
 .. py:function:: pip(*args)
 
    Install Python packages. It creates a virtual environment if one does not already exist and installs the specified packages.
    
    :param args: Arguments to pass to the pip install command.
-   :type target: str
 
-Example:
+   Example:
 
-.. code-block:: python
+   .. code-block:: python
    
-   pip("numpy", "pandas")
+      pip("numpy", "pandas")
 
 .. _run:
 
@@ -239,7 +247,7 @@ Example:
       files = run("ls", stdout=True).stdout # Capture output
    
    
-.. py:function:: def capture(*args, echo=True, cwd=None, check=True, text=True, shell=None)
+.. py:function:: capture(*args, echo=True, cwd=None, check=True, text=True, shell=None)
 
    Execute a command and capture the output. This function is a wrapper around 
    :ref:`run <run>`.
@@ -271,7 +279,7 @@ Example:
       msg = capture("echo Hello, World!")
    
 
-.. py:function:: read(filename):
+.. py:function:: read(filename)
    
    Read the contents of a file.
 
@@ -281,7 +289,7 @@ Example:
    :return: The contents of the file.
    :rtype: str
 
-.. py:function:: write(filename, txt, append=False):
+.. py:function:: write(filename, txt, append=False)
    
    Write text to a file.
 
@@ -294,7 +302,7 @@ Example:
    :param append: Append to the file instead of overwriting it (default ``False``).
    :type append: bool
 
-.. py:function:: makedirs(path):
+.. py:function:: makedirs(path)
    
    Create a directory along with any necessary parent directories if they do not already exist. This function wraps `os.makedirs() <https://docs.python.org/3/library/os.html#os.makedirs>`_ with the ``exists_ok`` parameter set to ``True``.
 
