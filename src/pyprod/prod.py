@@ -583,9 +583,6 @@ class Prod:
         return os.path.getmtime(name)
 
     def get_file_mtime_git(self, name):
-        import time
-
-        f = time.time()
         ret = subprocess.check_output(
             ["git", "log", "-1", "--format=%ai", "--", name], text=True
         ).strip()

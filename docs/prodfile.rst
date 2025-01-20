@@ -343,6 +343,13 @@ Example:
    :return: The quoted string.
    :rtype: str
 
+.. py:function:: use_git(use)
+   
+   Enable or disable git support. If enabled, PyProd retrieves the last modified time of the files from the git log.
+
+   :param use: Enable or disable git support.
+   :type bool: bool
+
 .. py:class::  Path
    
    A class representing file paths. This function is an alias for `pathlib.Path <https://docs.python.org/3/library/pathlib.html#pathlib.Path>`_.
@@ -352,8 +359,7 @@ Example:
 
 .. py:data::  shutil
 
-   Module to perform high-level file operations. See `shutil <https://docs.python.org/3/library/shutil.html>`_ for detail.
-
+   An alias for the Python Standard Library's `shutil <https://docs.python.org/3/library/shutil.html>`_ module. This module provides a higher-level interface for file operations than the built-in `os <https://docs.python.org/3/library/os.html>`_ module.
 
 .. py:data:: env
    

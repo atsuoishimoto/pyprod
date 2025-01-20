@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "PyProd"
-copyright = "2024, Atsuo Ishimoto"
+copyright = "2024-2025, Atsuo Ishimoto"
 author = "Atsuo Ishimoto"
 
 # -- General configuration ---------------------------------------------------

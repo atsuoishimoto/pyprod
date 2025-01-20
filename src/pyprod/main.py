@@ -38,7 +38,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-u",
+    "-g",
     "--use-git",
     dest="use_git",
     action="store_true",
