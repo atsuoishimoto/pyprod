@@ -13,7 +13,7 @@ classifiers = [
     "Topic :: Software Development :: Build Tools",
 ]
 dependencies = [
-    "pytest>=8.3.4",
+    "python-dateutil",
 ]
 
 [project.urls]

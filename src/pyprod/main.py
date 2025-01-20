@@ -36,6 +36,15 @@ parser.add_argument(
 parser.add_argument(
     "-r", "--rebuild", dest="rebuild", action="store_true", help="Rebuild all"
 )
+
+parser.add_argument(
+    "-u",
+    "--use-git",
+    dest="use_git",
+    action="store_true",
+    help="Get file timestamps from Git",
+)
+
 parser.add_argument(
     "-v",
     dest="verbose",
@@ -108,7 +117,6 @@ def main():
     try:
         # load module
         prod = pyprod.prod.Prod(mod, args.job, params)
-
         # select targets
         if not targets:
             target = prod.get_default_target()

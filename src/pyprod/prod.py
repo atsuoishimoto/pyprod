@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from fnmatch import fnmatch, translate
 from functools import wraps
 from pathlib import Path
-
+import dateutil.parser
 import pyprod
 
 from .utils import flatten, unique_list
@@ -104,9 +104,10 @@ def capture(*args, echo=True, cwd=None, check=True, text=True, shell=None):
 
 def glob(path, dir="."):
     ret = []
-    for c in Path(dir).glob(path):
+    root = Path(dir)
+    for c in root.glob(path):
         # ignore dot files
-        if any(p.startswith(".") for p in c.parts):
+        if any((p not in (".", "..")) and p.startswith(".") for p in c.parts):
             continue
         ret.append(c)
     return ret
@@ -431,10 +432,6 @@ class Checkers:
 MAX_TS = 1 << 63
 
 
-def is_file_exists(name):
-    return os.path.getmtime(name)
-
-
 class Exists:
     def __init__(self, name, exists, ts=None):
         self.name = name
@@ -518,10 +515,12 @@ class Prod:
         self.rules = Rules()
         self.checkers = Checkers()
         if njobs > 1:
-            self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=njobs)
+            self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=100)
         else:
             self.executor = None
         self.params = Params(params)
+        self.use_git_timestamp = pyprod.args.use_git
+
         self.buildings = {}
         self.module = None
         if self.modulefile:
@@ -548,6 +547,7 @@ class Prod:
             "run": run,
             "shutil": shutil,
             "task": self.rules.task,
+            "use_git": self.use_git,
             "write": write,
             "MAX_TS": MAX_TS,
             "Path": Path,
@@ -579,14 +579,35 @@ class Prod:
 
         return ret
 
+    def get_file_mtime(self, name):
+        return os.path.getmtime(name)
+
+    def get_file_mtime_git(self, name):
+        import time
+
+        f = time.time()
+        ret = subprocess.check_output(
+            ["git", "log", "-1", "--format=%ai", "--", name], text=True
+        ).strip()
+        if not ret:
+            raise FileNotFoundError(f"{name} did not match any file in git")
+
+        # 2025-01-17 00:05:48 +0900
+        return dateutil.parser.parse(ret)
+
     async def is_exists(self, name):
         checker = self.checkers.get_checker(name)
         try:
             if checker:
                 ret = await self.run_in_executor(checker, name)
+            elif self.use_git_timestamp:
+                ret = await self.run_in_executor(self.get_file_mtime_git, name)
             else:
-                ret = await self.run_in_executor(is_file_exists, name)
+                ret = await self.run_in_executor(self.get_file_mtime, name)
         except FileNotFoundError:
+            ret = False
+
+        if isinstance(ret, FileNotFoundError):
             ret = False
 
         if not ret:
@@ -598,7 +619,14 @@ class Prod:
         return Exists(name, True, ret)
 
     def build(self, *deps):
-        self.deps[0:0] = [_name_to_str(name) for name in flatten(deps)]
+        children = []
+        for elem in deps:
+            child = [_name_to_str(name) for name in flatten(elem)]
+            children.append(child)
+        self.deps[0:0] = children
+
+    def use_git(self, use):
+        self.use_git_timestamp = use
 
     def get_default_target(self):
         return self.rules.select_first_target()
@@ -614,6 +642,7 @@ class Prod:
         return self.built
 
     async def schedule(self, deps):
+        deps = list(flatten(deps))
         tasks = []
         waits = []
         for dep in deps:

@@ -281,6 +281,7 @@ async def test_task_uses_2(tmp_path, capsys):
     assert "run-task1" == capsys.readouterr().out.strip()
     assert (tmp_path / "file1").read_text() == "a"
 
+
 @pytest.mark.asyncio
 async def test_task_uses_notfound(tmp_path, capsys):
     p = prod.Prod(None, 1)
@@ -294,7 +295,6 @@ async def test_task_uses_notfound(tmp_path, capsys):
     with chdir(tmp_path):
         with pytest.raises(prod.NoRuleToMakeTargetError):
             await p.start(["file1"])
-
 
 
 @pytest.mark.asyncio
