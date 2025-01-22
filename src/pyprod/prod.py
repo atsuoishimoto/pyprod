@@ -363,12 +363,15 @@ class Rules:
         return unique_list(ret_depends), unique_list(ret_uses)
 
     def select_first_target(self):
+        first = None
         for dep in self.rules:
-            if dep.default:
-                return dep.name
+            if dep.default and (not first):
+                first = dep.name
 
             if dep.first_target:
                 return dep.first_target
+
+        return first
 
     def select_builder(self, name):
         for depends, uses, dep in self.iter_rule(name):
