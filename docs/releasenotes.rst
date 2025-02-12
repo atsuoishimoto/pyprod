@@ -1,12 +1,12 @@
 Release Notes
 ================
 
-0.5.0 (2025-
+0.5.0 (2025-2-12)
 -----------------------------
 
 - Added ``default`` to the ``@task``.
 - Removed ``depends`` from thr ``@task``.
-- Added --use-git option
+- Added --use-git commandline option.
 
 0.4.0 (2025-1-17)
 -------------------------
