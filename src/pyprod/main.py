@@ -53,6 +53,15 @@ parser.add_argument(
     help="Increase verbosity level (default: 0)",
 )
 
+parser.add_argument(
+    "-V",
+    "--version",
+    dest="version",
+    action="store_true",
+    default=0,
+    help="Show version",
+)
+
 
 parser.add_argument("targets", nargs="*", help="Build targets")
 
@@ -74,6 +83,10 @@ def init_args(args=None):
 
 def main():
     args = init_args()
+    if args.version:
+        print(f"PyProd {pyprod.__version__}")
+        sys.exit(0)
+
     pyprod.verbose = args.verbose
     chdir = args.directory
     if chdir:
