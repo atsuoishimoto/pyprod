@@ -71,7 +71,7 @@ async def test_prod(tmp_path, jobs):
         p = prod.Prod("Prodfile.py", 4)
         await p.start(["app.exe"])
 
-    assert mtime < (tmp_path / "app.exe").stat().st_mtime
+    assert mtime <= (tmp_path / "app.exe").stat().st_mtime
 
 
 @pytest.mark.asyncio

@@ -216,6 +216,9 @@ class Rule:
 
         self.depends = []
         for depend in flatten(depends or ()):
+            if not depend:
+                continue
+
             depend = _name_to_str(depend)
             _check_pattern_count(depend)
             _check_wildcard(depend)
@@ -223,6 +226,9 @@ class Rule:
 
         self.uses = []
         for use in flatten(uses or ()):
+            if not use:
+                continue
+
             use = _name_to_str(use)
             _check_pattern_count(use)
             _check_wildcard(use)

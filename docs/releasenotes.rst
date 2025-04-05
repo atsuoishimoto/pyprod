@@ -1,6 +1,11 @@
 Release Notes
 ================
 
+0.6.0 (2025-4-6)
+-----------------------------
+
+- Ignore None or falsy values in the ``depends`` and ``uses`` in the rule.
+
 0.5.0 (2025-2-12)
 -----------------------------
 
