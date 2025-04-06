@@ -126,9 +126,6 @@ def test_validate_depends():
     with pytest.raises(prod.RuleError):
         prod.Rule("a.%", None, "%.%", "")
 
-    with pytest.raises(prod.RuleError):
-        prod.Rule("a.%", None, "*/x.y", "")
-
     prod.Rule("a.b", None, "x.y", "")
 
 

@@ -17,7 +17,9 @@ from dataclasses import dataclass, field
 from fnmatch import fnmatch, translate
 from functools import wraps
 from pathlib import Path
+
 import dateutil.parser
+
 import pyprod
 
 from .utils import flatten, unique_list
@@ -164,7 +166,7 @@ def _check_pattern(pattern):
 
 def _check_wildcard(path):
     if "*" in path:
-        raise RuleError(f"{path}: '*' directory is not allowed")
+        raise RuleError(f"{path}: '*' is not allowed")
 
 
 def _name_to_str(name):
@@ -181,6 +183,25 @@ def _name_to_str(name):
             raise ValueError(f"Invalid dependency name: {name}")
 
     return name
+
+
+def _expand_glob(name):
+    if not isinstance(name, (str, Path)):
+        return name
+
+    if "*" not in str(name):
+        return name
+
+    # split path to support absolute path
+    p = Path(name)
+    parts = p.parts
+    for i, part in enumerate(parts):
+        if "*" in part:
+            root = Path(*parts[:i])
+            rest = "/".join(parts[i:])
+            break
+
+    return list(root.glob(rest))
 
 
 class Rule:
@@ -221,7 +242,6 @@ class Rule:
 
             depend = _name_to_str(depend)
             _check_pattern_count(depend)
-            _check_wildcard(depend)
             self.depends.append(depend)
 
         self.uses = []
@@ -352,6 +372,7 @@ class Rules:
                         depends = dep.depends[:]
                         uses = dep.uses[:]
 
+                    depends = list(flatten(_expand_glob(depend) for depend in depends))
                     yield depends, uses, dep
                     break
 

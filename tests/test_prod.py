@@ -1,3 +1,4 @@
+import json
 import os
 from contextlib import contextmanager
 from pathlib import Path
@@ -95,7 +96,7 @@ def build_app(target, a, b):
     Path(target).write_text(f"{target}, {a}, {b}")
 """
 
-    Path(tmp_path / "Prodfile.py").write_text(src)
+    (tmp_path / "Prodfile.py").write_text(src)
 
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
@@ -106,6 +107,50 @@ def build_app(target, a, b):
     assert (tmp_path / "a.c").read_text() == "a.c"
     assert (tmp_path / "b.o").read_text() == "b.o"
     assert (tmp_path / "b.c").read_text() == "b.c"
+
+
+@pytest.mark.asyncio
+async def test_dep_glob(tmp_path):
+    src = """
+@rule(targets=("%.o"), depends=Path("deps/%/*/dep"))
+def build(target, *deps):
+    assert isinstance(target, str)
+    p = Path(target)
+    assert set(deps) == {Path("deps/aaa/bbb/dep"), Path("deps/aaa/ccc/dep")}
+    p.write_text(repr([str(p) for p in deps]))
+"""
+
+    (tmp_path / "Prodfile.py").write_text(src)
+
+    (tmp_path / "deps/aaa/bbb/").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "deps/aaa/bbb/dep").write_text("1")
+
+    (tmp_path / "deps/aaa/ccc/").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "deps/aaa/ccc/dep").write_text("2")
+
+    (tmp_path / "deps/aaa/ddd/").mkdir(parents=True, exist_ok=True)
+
+    with chdir(tmp_path):
+        p = prod.Prod("Prodfile.py")
+        await p.start(["aaa.o"])
+        print((tmp_path / "aaa.o").read_text())
+
+
+@pytest.mark.asyncio
+async def test_dep_glob_no_match(tmp_path):
+    src = """
+@rule(targets=("%.o"), depends=Path("deps/%/*/dep"))
+def build(target, *deps):
+    assert isinstance(target, str)
+    p = Path(target)
+    p.write_text(str(target)+"-"+str(deps))
+"""
+
+    (tmp_path / "Prodfile.py").write_text(src)
+    with chdir(tmp_path):
+        p = prod.Prod("Prodfile.py")
+        await p.start(["aaa.o"])
+        assert (tmp_path / "aaa.o").read_text() == "aaa.o-()"
 
 
 @pytest.mark.asyncio
