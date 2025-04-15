@@ -137,10 +137,7 @@ def main():
                 sys.exit("No default target")
             targets = [target]
 
-        ret = 0
-        for target in targets:
-            ret += asyncio.run(prod.start([target]))
-
+        ret = asyncio.run(prod.start(targets))
         if not ret:
             print(f"Nothing to be done for {targets}")
 

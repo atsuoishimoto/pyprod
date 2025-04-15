@@ -79,7 +79,8 @@ def task2():
     (tmp_path / "Prodfile.py").write_text(src)
     with chdir(tmp_path):
         p = prod.Prod("Prodfile.py", 4)
-        await p.start(["task2"])
+        ret = await p.start(["task2"])
 
+    assert ret == 3
     assert "task1" == capsys.readouterr().out.strip()
     assert (tmp_path / "a.c").read_text() == "hello"

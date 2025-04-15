@@ -575,6 +575,8 @@ class Prod:
             self.module = self.load_pyprodfile(self.modulefile)
         self.built = 0  # number of build execused
 
+        self.deps = []
+
     def get_module_globals(self):
         globals = {
             "build": self.build,
@@ -664,11 +666,8 @@ class Prod:
         return Exists(name, True, ret)
 
     def build(self, *deps):
-        children = []
-        for elem in deps:
-            child = [_name_to_str(name) for name in flatten(elem)]
-            children.append(child)
-        self.deps[0:0] = children
+        if deps:
+            self.deps[0:0] = deps
 
     def use_git(self, use):
         self.use_git_timestamp = use
@@ -679,10 +678,12 @@ class Prod:
     async def start(self, deps):
         self.loop = asyncio.get_running_loop()
         self.built = 0
-        self.deps = deps[:]
+        self.deps.append(deps)
         while self.deps:
+            tasks = []
             dep = self.deps.pop(0)
-            await self.schedule([dep])
+            tasks.append(self.schedule([dep]))
+            await asyncio.gather(*tasks)
 
         return self.built
 
