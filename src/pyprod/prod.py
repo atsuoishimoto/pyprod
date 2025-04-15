@@ -240,8 +240,9 @@ class Rule:
             if not depend:
                 continue
 
-            depend = _name_to_str(depend)
-            _check_pattern_count(depend)
+            if not callable(depend):
+                depend = _name_to_str(depend)
+                _check_pattern_count(depend)
             self.depends.append(depend)
 
         self.uses = []
@@ -249,9 +250,10 @@ class Rule:
             if not use:
                 continue
 
-            use = _name_to_str(use)
-            _check_pattern_count(use)
-            _check_wildcard(use)
+            if not callable(use):
+                use = _name_to_str(use)
+                _check_pattern_count(use)
+                _check_wildcard(use)
             self.uses.append(use)
 
         self.builder = builder
@@ -365,9 +367,25 @@ class Rules:
                         if m:
                             stem = m.groupdict().get("stem", None)
 
+                    depends = []
+                    for d in dep.depends:
+                        if callable(d):
+                            ret = flatten([d(name, stem)], ignore_none=True)
+                            depends.extend(ret)
+                        else:
+                            depends.append(d)
+
+                    uses = []
+                    for u in dep.uses:
+                        if callable(u):
+                            ret = flatten([u(name, stem)], ignore_none=True)
+                            uses.extend(ret)
+                        else:
+                            uses.append(u)
+
                     if stem is not None:
-                        depends = [replace_pattern(r, stem) for r in dep.depends]
-                        uses = [replace_pattern(r, stem) for r in dep.uses]
+                        depends = [replace_pattern(r, stem) for r in depends]
+                        uses = [replace_pattern(r, stem) for r in uses]
                     else:
                         depends = dep.depends[:]
                         uses = dep.uses[:]

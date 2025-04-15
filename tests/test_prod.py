@@ -154,6 +154,55 @@ def build(target, *deps):
 
 
 @pytest.mark.asyncio
+async def test_dep_callable(tmp_path):
+    src = """
+def dep1(target, stem):
+    return target+".dep", stem
+
+@rule(targets=("%.o"), depends=dep1)
+def build(target, *deps):
+    print(">>>>>>>>>>>>>>>>>", target, deps)
+    assert deps == ("aaa.o.dep", "aaa")
+"""
+
+    (tmp_path / "Prodfile.py").write_text(src)
+    (tmp_path / "aaa.o.dep").write_text("1")
+    (tmp_path / "aaa").write_text("2")
+
+    with chdir(tmp_path):
+        p = prod.Prod("Prodfile.py")
+        await p.start(["aaa.o"])
+
+
+@pytest.mark.asyncio
+async def test_uses_callable(tmp_path):
+    src = """
+def call1(target, stem):
+    return "call1-name"
+
+def call2(target, stem):
+    return "call2-name"
+
+@rule(targets=("%.o"), uses=(call1, call2))
+def build(target, *deps):
+    print(">>>>>>>>>>>>>>>>>", target, deps)
+"""
+
+    (tmp_path / "Prodfile.py").write_text(src)
+    (tmp_path / "call1-name").write_text("1")
+
+    with chdir(tmp_path):
+        p = prod.Prod("Prodfile.py")
+        with pytest.raises(prod.NoRuleToMakeTargetError):
+            await p.start(["aaa.o"])
+
+    (tmp_path / "call2-name").write_text("2")
+    with chdir(tmp_path):
+        p = prod.Prod("Prodfile.py")
+        await p.start(["aaa.o"])
+
+
+@pytest.mark.asyncio
 async def test_preserve_pathobj(tmp_path):
     src = """
 @rule(targets=Path("%.o"), depends=Path("%.c"))
