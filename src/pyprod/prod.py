@@ -637,7 +637,8 @@ class Prod:
             ["git", "log", "-1", "--format=%ai", "--", name], text=True
         ).strip()
         if not ret:
-            raise FileNotFoundError(f"{name} did not match any file in git")
+            logger.warning("%s did not match any file in git", name)
+            return self.get_file_mtime(name)
 
         # 2025-01-17 00:05:48 +0900
         return dateutil.parser.parse(ret)

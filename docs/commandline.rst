@@ -5,7 +5,8 @@ Command line options
 ------------------------
 
 
-usage: pyprod [-h] [-C DIRECTORY] [-f FILE] [-j JOB] [-r] [-g] [-v] [targets ...]
+usage: pyprod [-h] [-C DIRECTORY] [-f FILE] [-j JOB] [-r] [-g] [-w [WATCH ...]] [-v] [-V] [targets ...]
+
 
 PyProd - More makable than make
 
@@ -20,4 +21,6 @@ options:
   -j, --job JOB         Allow up to N jobs to run simultaneously (default: 1)
   -r, --rebuild         Rebuild all
   -g, --use-git         Get file timestamps from Git
+                        directories to watch
   -v                    Increase verbosity level (default: 0)
+  -V, --version         Show version

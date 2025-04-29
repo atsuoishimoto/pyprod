@@ -3,7 +3,12 @@ import asyncio
 import logging
 import os
 import sys
+import threading
+import time
 from pathlib import Path
+
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 import pyprod
 import pyprod.prod
@@ -46,6 +51,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-w",
+    "--watch",
+    nargs="*",
+    help="directories to watch",
+)
+
+parser.add_argument(
     "-v",
     dest="verbose",
     action="count",
@@ -79,6 +91,23 @@ def print_exc(e):
 def init_args(args=None):
     args = pyprod.args = parser.parse_args(args)
     return args
+
+
+class Handler(FileSystemEventHandler):
+    def __init__(self, ev):
+        self._ev = ev
+
+    def on_created(self, event):
+        print(event)
+        self._ev.set()
+
+    def on_modified(self, event):
+        print(event)
+        self._ev.set()
+
+    def on_deleted(self, event):
+        print(event)
+        self._ev.set()
 
 
 def main():
@@ -127,9 +156,29 @@ def main():
         else:
             targets.append(target)
 
+    run(mod, args.job, params, targets)
+
+    if args.watch:
+        ev = threading.Event()
+        observer = Observer()
+
+        for watch in args.watch:
+            d = Path(watch).absolute()
+            print(d)
+            observer.schedule(Handler(ev), str(d), recursive=True)
+
+        observer.start()
+        while True:
+            ev.wait()
+            time.sleep(0.1)
+            ev.clear()
+            run(mod, args.job, params, targets)
+
+
+def run(mod, job, params, targets):
     try:
         # load module
-        prod = pyprod.prod.Prod(mod, args.job, params)
+        prod = pyprod.prod.Prod(mod, job, params)
         # select targets
         if not targets:
             target = prod.get_default_target()
