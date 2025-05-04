@@ -704,16 +704,17 @@ class Prod:
                 if isinstance(obj, asyncio.Event):
                     waits.append(obj)
 
-        results = await asyncio.gather(*(coro for _, coro in tasks))
-        for ret, (dep, _) in zip(results, tasks):
-            ev = self.buildings[dep]
-            try:
-                self.buildings[dep] = ret
-            finally:
-                ev.set()
+        if tasks:
+            results = await asyncio.gather(*(coro for _, coro in tasks))
+            for ret, (dep, _) in zip(results, tasks):
+                ev = self.buildings[dep]
+                try:
+                    self.buildings[dep] = ret
+                finally:
+                    ev.set()
 
-        events = [ev.wait() for ev in waits]
-        await asyncio.gather(*events)
+            events = [ev.wait() for ev in waits]
+            await asyncio.gather(*events)
 
         ts = []
         for dep in deps:
