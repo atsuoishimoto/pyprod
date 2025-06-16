@@ -164,7 +164,6 @@ def main():
 
         for watch in args.watch:
             d = Path(watch).absolute()
-            print(d)
             observer.schedule(Handler(ev), str(d), recursive=True)
 
         observer.start()
