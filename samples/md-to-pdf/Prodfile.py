@@ -38,7 +38,7 @@ def make_html(target, src, template, *_):
 
 # create outputs directory
 @rule(BUILD)
-def builds(target):
+def make_dir(target):
     os.makedirs(target, exist_ok=True)
 
 
