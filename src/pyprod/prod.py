@@ -713,8 +713,8 @@ class Prod:
                 finally:
                     ev.set()
 
-            events = [ev.wait() for ev in waits]
-            await asyncio.gather(*events)
+        events = [ev.wait() for ev in waits]
+        await asyncio.gather(*events)
 
         ts = []
         for dep in deps:
@@ -744,6 +744,7 @@ class Prod:
             tasks.append(uses_task)
 
         await asyncio.gather(*tasks)
+
         ts = 0
         if deps:
             ts = deps_task.result()
