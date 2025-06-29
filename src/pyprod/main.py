@@ -6,7 +6,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-
+from itertools import chain
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -53,7 +53,8 @@ parser.add_argument(
 parser.add_argument(
     "-w",
     "--watch",
-    nargs="*",
+    nargs="+",
+    action="append",
     help="directories to watch",
 )
 
@@ -159,19 +160,21 @@ def main():
     run(mod, args.job, params, targets)
 
     if args.watch:
-        ev = threading.Event()
-        observer = Observer()
+        watches = list(chain.from_iterable(args.watch))
+        if watches:
+            ev = threading.Event()
+            observer = Observer()
 
-        for watch in args.watch:
-            d = Path(watch).absolute()
-            observer.schedule(Handler(ev), str(d), recursive=True)
+            for watch in watches:
+                d = Path(watch).absolute()
+                observer.schedule(Handler(ev), str(d), recursive=True)
 
-        observer.start()
-        while True:
-            ev.wait()
-            time.sleep(0.1)
-            ev.clear()
-            run(mod, args.job, params, targets)
+            observer.start()
+            while True:
+                ev.wait()
+                time.sleep(0.1)
+                ev.clear()
+                run(mod, args.job, params, targets)
 
 
 def run(mod, job, params, targets):
