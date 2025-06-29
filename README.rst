@@ -1,31 +1,54 @@
-PyProd: Supercharge Your Build Process with Python
-===================================================
+PyProd: A Python-Native Workflow Engine for Any Resource
+=========================================================
 
-**Tired of Makefile's arcane syntax? PyProd is a modern, Python-based build tool that replaces Makefiles with the full power and simplicity of Python.**
+**PyProd is a modern workflow automation engine that uses Python to orchestrate complex tasks, going far beyond the limitations of traditional, file-based build tools like Make.**
 
-Define complex build logic, manage dependencies, and automate your entire workflow using a language you already know and love. PyProd combines the robustness of traditional build systems with Python's vast ecosystem, creating a development experience that is more intuitive, powerful, and "makeable than make."
+While PyProd can replace Makefiles and shell scripts, its true power lies in its ability to treat **any resource**—not just files—as a dependency. With the `@check` decorator, you can define custom logic to check the state of database records, S3 objects, API endpoints, or any other resource you can query with Python. 
+
+This transforms PyProd from a simple build tool into a flexible and powerful engine for orchestrating sophisticated, real-world workflows.
 
 For detailed documentation, please refer to the `official documentation <https://pyprod.readthedocs.io/en/stable/>`_.
 
-Why PyProd over Make?
----------------------
+Beyond Files: The Power of `@check`
+-----------------------------------
 
-PyProd isn't just another Makefile clone; it's a fundamental upgrade to your build process.
+The `@check` decorator is what sets PyProd apart. While `make` is limited to checking file timestamps, `@check` lets you define a dependency with a custom Python function. This function returns a timestamp, a hash, or any value representing the state of a resource. PyProd will only run the tasks that depend on it if this value changes.
 
-*   **Write Build Logic in Pure Python:** Stop wrestling with Make's DSL and shell script workarounds. Use Python's functions, libraries, and control flow to create clear, maintainable, and powerful build scripts. Integrate directly with libraries like `boto3`, `requests`, or `pandas` for truly dynamic workflows.
+This unlocks a new level of automation possibilities:
 
-*   **Automatic Virtual Environment Management:** PyProd automatically creates and manages a dedicated virtual environment for your project. This ensures a clean, isolated, and reproducible build every time, eliminating "works on my machine" issues.
+*   **Database-Driven Workflows:** Trigger a task only when a specific record in your database is updated.
 
-*   **Dynamic & Smart Dependency Tracking:** Go beyond static file lists. PyProd can dynamically determine dependencies at runtime. It also features an optional Git-based timestamp check (`-g`), which intelligently avoids unnecessary rebuilds by checking file versions against your commit history, not just filesystem timestamps.
+    .. code-block:: python
 
-*   **Built-in File Watcher for Auto-Rebuilds:** Boost your productivity with a built-in file watcher. Run `pyprod --watch` and PyProd will automatically rebuild your project whenever a source file changes.
+        @check("db://users/latest")
+        def check_latest_user(target):
+            return db.get_latest_user_timestamp()
 
-Core Features
--------------
-- **Intuitive Syntax:** Define rules and tasks with simple Python decorators (`@rule`, `@task`).
-- **Pattern Matching:** Create flexible, pattern-based rules, just like in Make (e.g., `"%.o": "%.c"`).
-- **Parallel Execution:** Speed up your builds by running independent jobs in parallel (`-j`).
-- **Extensibility:** Easily write and reuse your own Python functions for custom, complex tasks.
+        @rule("report.pdf", depends="db://users/latest")
+        def generate_report(target, deps):
+            # This runs only when a new user is added
+            create_report()
+
+*   **Cloud & API Integration:** Depend on the state of cloud resources. For example, run a task only if an object in an S3 bucket has been modified.
+
+    .. code-block:: python
+
+        import boto3
+
+        @check("s3://my-bucket/data.csv")
+        def check_s3_object(target):
+            s3 = boto3.client("s3")
+            response = s3.head_object(Bucket="my-bucket", Key="data.csv")
+            return response["LastModified"]
+
+*   **And More:** Check the latest Git commit, the response of a web API, or any other stateful resource you can imagine.
+
+Core Philosophy
+---------------
+
+*   **Python as the DSL:** Use pure Python to define tasks, giving you access to its rich standard library and the entire PyPI ecosystem.
+*   **Abstract Dependency-Aware Execution:** Intelligently skips tasks when the state of any dependent resource (file, database record, S3 object, etc.) hasn't changed.
+*   **Modern Development Features:** Includes built-in support for **automatic virtual environment management**, a **file watcher for auto-rebuilds** (`--watch`), and **Git-aware timestamp checking** (`-g`).
 
 Installation
 ------------
@@ -35,54 +58,9 @@ To install PyProd, simply use pip:
 
     pip install pyprod
 
-Quick Start: Classic C Project
-------------------------------
-A traditional Makefile for a C project can be elegantly expressed in a `Prodfile.py`:
-
-.. code-block:: python
-
-    # Prodfile.py
-    CC = "gcc"
-    CFLAGS = "-c -I."
-    DEPS = "hello.h"
-    OBJS = ["hello.o", "main.o"]
-    EXE = "hello.exe"
-
-    @rule("%.o", depends=("%.c", DEPS))
-    def compile(target, src, *deps):
-        run(CC, "-o", target, src, CFLAGS)
-
-    @rule(EXE, depends=OBJS)
-    def link(target, *objs):
-        run(CC, "-o", target, *objs)
-
-    @task
-    def clean():
-        run("rm -f", OBJS, EXE)
-
-    @task(default=True)
-    def all():
-        build(EXE)
-
-To run the build, simply execute `pyprod` in your project directory:
-
-.. code-block:: sh
-
-    $ pyprod
-
-Modern Workflow: Live Reload
-----------------------------
-
-Develop faster with the built-in file watcher. PyProd will monitor your source files and trigger a rebuild automatically on any change.
-
-.. code-block:: sh
-
-    # Watch the 'src' and 'include' directories and rebuild on change
-    $ pyprod --watch src include
-
 Explore More
 ------------
-You can find more advanced examples, including documentation generation and S3 file management, in the `samples <https://github.com/atsuoishimoto/pyprod/tree/main/samples>`_ directory.
+You can find concrete examples, including **S3 file management** and documentation generation, in the `samples <https://github.com/atsuoishimoto/pyprod/tree/main/samples>`_ directory. These examples showcase the true power and versatility of PyProd beyond simple file-based tasks.
 
 License
 -------
