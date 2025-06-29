@@ -1,17 +1,16 @@
-PyProd: A Python-Powered Workflow Engine for Files and Beyond
-================================================================
+PyProd - More Makeable than Make
+=================================
 
-**PyProd is a modern, Python-native replacement for Makefiles. It offers both a simple, elegant way to handle traditional file-based builds and a powerful engine for orchestrating complex workflows involving any resource.**
+PyProd is a Python script that can be used as an alternative to Makefile. By leveraging Python's versatility, it enables you to define build rules and dependencies programmatically, allowing for dynamic configurations, integration with existing Python libraries, and custom build logic not easily achievable with traditional Makefiles. For detailed documentation, please refer to the `official documentation <https://pyprod.readthedocs.io/en/stable/>`_.
 
-Whether you need a more readable alternative to a Makefile for your C project, or a sophisticated system to manage data pipelines that depend on database records and S3 objects, PyProd provides a single, consistent, and powerful solution using a language you already know.
 
-For detailed documentation, please refer to the `official documentation <https://pyprod.readthedocs.io/en/stable/>`_.
+Features
+--------
+- Define build rules in Python: Use Python functions to create clear and concise build logic.
+- Specify dependencies for each rule: Automatically track and resolve dependencies between files, such as source files and headers.
+- Easily extendable with custom Python functions: Integrate custom logic for specialized tasks, like code linting or deployment.
+- Manages virtual environments: Automatically create and manage virtual environments for each project, ensuring a clean and isolated build environment.
 
-Core Features
--------------
-*   **Python as the DSL:** Use pure Python for clear, maintainable, and powerful build logic.
-*   **Abstract Dependency-Aware Execution:** Intelligently skips tasks based on the state of any resource, not just files.
-*   **Modern Development Features:** Includes **automatic virtual environment management**, a **file watcher for auto-rebuilds** (`--watch`), and **Git-aware timestamp checking** (`-g`).
 
 Installation (Recommended)
 --------------------------
@@ -74,18 +73,6 @@ But PyProd's Power Goes Far Beyond Files
 The true power of PyProd is unlocked with the `@check` decorator. It allows you to define a dependency on **any resource** by writing a simple Python function. This function can check a database record, an S3 object, a Git commit, or an API response, and PyProd will only run the dependent tasks if the state of that resource changes.
 
 This transforms PyProd into a flexible workflow engine:
-
-*   **Depend on a Database Record:** Trigger a report only when a user is added.
-
-    .. code-block:: python
-
-        @check("db://users/latest")
-        def check_latest_user(target):
-            return db.get_latest_user_timestamp()
-
-        @rule("report.pdf", depends="db://users/latest")
-        def generate_report(target, deps):
-            create_report()
 
 *   **Depend on a Cloud Resource:** Re-run a data processing task only when an S3 object is updated.
 
