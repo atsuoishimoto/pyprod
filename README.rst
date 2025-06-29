@@ -7,6 +7,20 @@ Whether you need a more readable alternative to a Makefile for your C project, o
 
 For detailed documentation, please refer to the `official documentation <https://pyprod.readthedocs.io/en/stable/>`_.
 
+Core Features
+-------------
+*   **Python as the DSL:** Use pure Python for clear, maintainable, and powerful build logic.
+*   **Abstract Dependency-Aware Execution:** Intelligently skips tasks based on the state of any resource, not just files.
+*   **Modern Development Features:** Includes **automatic virtual environment management**, a **file watcher for auto-rebuilds** (`--watch`), and **Git-aware timestamp checking** (`-g`).
+
+Installation
+------------
+To install PyProd, simply use pip:
+
+.. code-block:: sh
+
+    pip install pyprod
+
 Quick Start: A Better Makefile
 ------------------------------
 
@@ -68,20 +82,6 @@ This transforms PyProd into a flexible workflow engine:
         def check_s3_object(target):
             response = boto3.client("s3").head_object(Bucket="my-bucket", Key="data.csv")
             return response["LastModified"]
-
-Core Features
--------------
-*   **Python as the DSL:** Use pure Python for clear, maintainable, and powerful build logic.
-*   **Abstract Dependency-Aware Execution:** Intelligently skips tasks based on the state of any resource, not just files.
-*   **Modern Development Features:** Includes **automatic virtual environment management**, a **file watcher for auto-rebuilds** (`--watch`), and **Git-aware timestamp checking** (`-g`).
-
-Installation
-------------
-To install PyProd, simply use pip:
-
-.. code-block:: sh
-
-    pip install pyprod
 
 Explore More
 ------------
