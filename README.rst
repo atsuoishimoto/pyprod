@@ -1,22 +1,52 @@
-PyProd: A Python-Native Workflow Engine for Any Resource
-=========================================================
+PyProd: A Python-Powered Workflow Engine for Files and Beyond
+================================================================
 
-**PyProd is a modern workflow automation engine that uses Python to orchestrate complex tasks, going far beyond the limitations of traditional, file-based build tools like Make.**
+**PyProd is a modern, Python-native replacement for Makefiles. It offers both a simple, elegant way to handle traditional file-based builds and a powerful engine for orchestrating complex workflows involving any resource.**
 
-While PyProd can replace Makefiles and shell scripts, its true power lies in its ability to treat **any resource**—not just files—as a dependency. With the `@check` decorator, you can define custom logic to check the state of database records, S3 objects, API endpoints, or any other resource you can query with Python. 
-
-This transforms PyProd from a simple build tool into a flexible and powerful engine for orchestrating sophisticated, real-world workflows.
+Whether you need a more readable alternative to a Makefile for your C project, or a sophisticated system to manage data pipelines that depend on database records and S3 objects, PyProd provides a single, consistent, and powerful solution using a language you already know.
 
 For detailed documentation, please refer to the `official documentation <https://pyprod.readthedocs.io/en/stable/>`_.
 
-Beyond Files: The Power of `@check`
------------------------------------
+Quick Start: A Better Makefile
+------------------------------
 
-The `@check` decorator is what sets PyProd apart. While `make` is limited to checking file timestamps, `@check` lets you define a dependency with a custom Python function. This function returns a timestamp, a hash, or any value representing the state of a resource. PyProd will only run the tasks that depend on it if this value changes.
+For those tired of Makefile's syntax, PyProd is a breath of fresh air. A classic C project build script is far more readable and maintainable when written in a `Prodfile.py`:
 
-This unlocks a new level of automation possibilities:
+.. code-block:: python
 
-*   **Database-Driven Workflows:** Trigger a task only when a specific record in your database is updated.
+    # Prodfile.py
+    CC = "gcc"
+    CFLAGS = "-c -I."
+    DEPS = "hello.h"
+    OBJS = ["hello.o", "main.o"]
+    EXE = "hello.exe"
+
+    @rule("%.o", depends=("%.c", DEPS))
+    def compile(target, src, *deps):
+        run(CC, "-o", target, src, CFLAGS)
+
+    @rule(EXE, depends=OBJS)
+    def link(target, *objs):
+        run(CC, "-o", target, *objs)
+
+    @task
+    def clean():
+        run("rm -f", OBJS, EXE)
+
+To run the build, simply execute `pyprod`:
+
+.. code-block:: sh
+
+    $ pyprod
+
+But PyProd's Power Goes Far Beyond Files
+----------------------------------------
+
+The true power of PyProd is unlocked with the `@check` decorator. It allows you to define a dependency on **any resource** by writing a simple Python function. This function can check a database record, an S3 object, a Git commit, or an API response, and PyProd will only run the dependent tasks if the state of that resource changes.
+
+This transforms PyProd into a flexible workflow engine:
+
+*   **Depend on a Database Record:** Trigger a report only when a user is added.
 
     .. code-block:: python
 
@@ -26,10 +56,9 @@ This unlocks a new level of automation possibilities:
 
         @rule("report.pdf", depends="db://users/latest")
         def generate_report(target, deps):
-            # This runs only when a new user is added
             create_report()
 
-*   **Cloud & API Integration:** Depend on the state of cloud resources. For example, run a task only if an object in an S3 bucket has been modified.
+*   **Depend on a Cloud Resource:** Re-run a data processing task only when an S3 object is updated.
 
     .. code-block:: python
 
@@ -37,18 +66,14 @@ This unlocks a new level of automation possibilities:
 
         @check("s3://my-bucket/data.csv")
         def check_s3_object(target):
-            s3 = boto3.client("s3")
-            response = s3.head_object(Bucket="my-bucket", Key="data.csv")
+            response = boto3.client("s3").head_object(Bucket="my-bucket", Key="data.csv")
             return response["LastModified"]
 
-*   **And More:** Check the latest Git commit, the response of a web API, or any other stateful resource you can imagine.
-
-Core Philosophy
----------------
-
-*   **Python as the DSL:** Use pure Python to define tasks, giving you access to its rich standard library and the entire PyPI ecosystem.
-*   **Abstract Dependency-Aware Execution:** Intelligently skips tasks when the state of any dependent resource (file, database record, S3 object, etc.) hasn't changed.
-*   **Modern Development Features:** Includes built-in support for **automatic virtual environment management**, a **file watcher for auto-rebuilds** (`--watch`), and **Git-aware timestamp checking** (`-g`).
+Core Features
+-------------
+*   **Python as the DSL:** Use pure Python for clear, maintainable, and powerful build logic.
+*   **Abstract Dependency-Aware Execution:** Intelligently skips tasks based on the state of any resource, not just files.
+*   **Modern Development Features:** Includes **automatic virtual environment management**, a **file watcher for auto-rebuilds** (`--watch`), and **Git-aware timestamp checking** (`-g`).
 
 Installation
 ------------
@@ -60,7 +85,7 @@ To install PyProd, simply use pip:
 
 Explore More
 ------------
-You can find concrete examples, including **S3 file management** and documentation generation, in the `samples <https://github.com/atsuoishimoto/pyprod/tree/main/samples>`_ directory. These examples showcase the true power and versatility of PyProd beyond simple file-based tasks.
+You can find more advanced examples, including **S3 file management** and documentation generation, in the `samples <https://github.com/atsuoishimoto/pyprod/tree/main/samples>`_ directory. These examples showcase the true power and versatility of PyProd.
 
 License
 -------
