@@ -13,13 +13,28 @@ Core Features
 *   **Abstract Dependency-Aware Execution:** Intelligently skips tasks based on the state of any resource, not just files.
 *   **Modern Development Features:** Includes **automatic virtual environment management**, a **file watcher for auto-rebuilds** (`--watch`), and **Git-aware timestamp checking** (`-g`).
 
-Installation
-------------
-To install PyProd, simply use pip:
+Installation (Recommended)
+--------------------------
+
+We recommend using `uv` for the best experience. `uv` is an extremely fast Python package installer and resolver.
+
+First, install `uv`:
 
 .. code-block:: sh
 
-    pip install pyprod
+    # macOS / Linux
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    # Windows
+    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+Then, use `uv tool install` to make the `pyprod` command available globally without polluting your system's Python environment:
+
+.. code-block:: sh
+
+    uv tool install pyprod
+
+(You can also use `pip install pyprod` if you prefer.)
 
 Quick Start: A Better Makefile
 ------------------------------
