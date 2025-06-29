@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import sys
 from collections import defaultdict
-from collections.abc import Collection
+from collections.abc import Collection, Awaitable
 from dataclasses import dataclass, field
 from fnmatch import fnmatch, translate
 from functools import wraps
@@ -205,7 +205,7 @@ def _expand_glob(name):
 
 
 class Rule:
-    def __init__(self, targets, pattern=None, depends=(), uses=(), builder=None):
+    def __init__(self, targets, pattern=None, depends=(), uses=(), builder=None, doc=None):
         self.targets = []
         self.default = False
         self.first_target = None
@@ -257,6 +257,11 @@ class Rule:
             self.uses.append(use)
 
         self.builder = builder
+        self.doc = doc
+        if not self.doc and self.builder:
+            doc = getattr(self.builder, "__doc__", None)
+            if doc:
+                self.doc = doc
 
     def __call__(self, f):
         self.builder = f
@@ -278,8 +283,8 @@ def default_builder(*args, **kwargs):
 
 
 class Task(Rule):
-    def __init__(self, name, uses, default, func=None):
-        super().__init__((), pattern=None, depends=(), uses=uses, builder=func)
+    def __init__(self, name, uses, default, func=None, doc=None):
+        super().__init__((), pattern=None, depends=(), uses=uses, builder=func, doc=doc)
         if name:
             self.name = _name_to_str(name)
             if name:
@@ -318,7 +323,7 @@ class Rules:
         self._detect_loop = set()
         self.frozen = False
 
-    def add_rule(self, targets, pattern=None, depends=(), uses=(), builder=None):
+    def add_rule(self, targets, pattern=None, depends=(), uses=(), builder=None, doc=None):
         if builder:
             if not callable(builder):
                 raise ValueError(f"{builder} is not callable")
@@ -326,14 +331,14 @@ class Rules:
         if self.frozen:
             raise RuntimeError("No new rule can be added after initialization")
 
-        dep = Rule(targets, pattern, depends, uses, builder)
+        dep = Rule(targets, pattern, depends, uses, builder, doc)
         self.rules.append(dep)
         return dep
 
-    def add_task(self, name=None, uses=(), default=False, func=None):
+    def add_task(self, name=None, uses=(), default=False, func=None, doc=None):
         if self.frozen:
             raise RuntimeError("No new rule can be added after initialization")
-        dep = Task(name, uses, default, func)
+        dep = Task(name, uses, default, func, doc)
         self.rules.append(dep)
         return dep
 
@@ -690,39 +695,29 @@ class Prod:
 
     async def schedule(self, deps):
         deps = list(flatten(deps))
-        tasks = []
         waits = []
         for dep in deps:
             if dep not in self.buildings:
-                ev = asyncio.Event()
-                self.buildings[dep] = ev
-                coro = self.run(dep)
-                tasks.append((dep, coro))
-                waits.append(ev)
-            else:
-                obj = self.buildings[dep]
-                if isinstance(obj, asyncio.Event):
-                    waits.append(obj)
+                async def call_run(dep):
+                    ts = await self.run(dep)
+                    self.buildings[dep] = ts
 
-        if tasks:
-            results = await asyncio.gather(*(coro for _, coro in tasks))
-            for ret, (dep, _) in zip(results, tasks):
-                ev = self.buildings[dep]
-                try:
-                    self.buildings[dep] = ret
-                finally:
-                    ev.set()
+                self.buildings[dep] = asyncio.create_task(call_run(dep))
 
-        events = [ev.wait() for ev in waits]
-        await asyncio.gather(*events)
+            obj = self.buildings[dep]
+            if isinstance(obj, Awaitable):
+                waits.append(obj)
+
+        await asyncio.gather(*waits)
 
         ts = []
         for dep in deps:
             obj = self.buildings[dep]
-            if isinstance(obj, int | float):
-                ts.append(obj)
+            ts.append(obj)
+
         if ts:
             return max(ts)
+
         return 0
 
     async def run(self, name):  # -> Any | int:
