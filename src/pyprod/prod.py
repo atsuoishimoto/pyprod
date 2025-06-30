@@ -115,14 +115,49 @@ def glob(path, dir="."):
     return ret
 
 
+def iter_span(regex, text):
+    begin = 0
+    for m in re.finditer(regex, text):
+        s, e = m.span()
+        if begin != s:
+            yield text[begin:s]
+        yield text[s:e]
+        begin = e
+    if begin != len(text):
+        yield text[begin:]
+
+def _convert_rule_re(s_rule):
+    wildcard = r"(?P<wildcard>\*)"
+    #star = r"(?P<star>\\\*)"
+    backslash = r"(?P<backspash>\\.)"
+    stem = "%"
+    percent = "%%"
+
+    ret = []
+    re_path = f"({wildcard}|{backslash}|{percent}|{stem})+?"
+    num_percent = 0
+    for s in iter_span(re_path, s_rule):
+        if s[0] == "\\":
+            ret.append(re.escape(s[1]))
+        elif s == "*":
+            ret.append(".*")
+        elif s == "%%":
+            ret.append("%")
+        elif s == "%":
+            num_percent += 1
+            if num_percent > 1:
+                raise RuleError(f"{s_rule} contains multiple '%'")
+            ret.append("(?P<stem>.*)")
+        else:
+            ret.append(re.escape(s))
+    return "".join(ret)
+
 def rule_to_re(rule):
     if not isinstance(rule, (str, Path)):
         raise TypeError(f"str or Path required: {rule}")
 
     srule = str(rule)
-    srule = translate(srule)
-    srule = replace_pattern(srule, "(?P<stem>.*)", maxreplace=1)
-    return srule
+    return _convert_rule_re(srule)
 
 
 def replace_pattern(rule, replaceto, *, maxreplace=None):

@@ -81,6 +81,18 @@ def test_stem_wildcard():
     assert deps == ["a.c"]
 
 
+def test_stem_escaped_wildcard():
+    rules = prod.Rules()
+
+    @rules.rule(targets="dir/\\*/%.o", depends="%.c")
+    def f():
+        pass
+
+    assert rules.select_builder("dir/dir2/a.o") is None
+    deps, _, _ = rules.select_builder("dir/*/a.o")
+    assert deps == ["a.c"]
+
+
 def test_stem_escape():
     rules = prod.Rules()
 
@@ -90,6 +102,14 @@ def test_stem_escape():
 
     deps, _, _ = rules.select_builder("a.%")
     assert deps == ["a.%"]
+
+def test_rule_to_re():
+    assert re.fullmatch(prod.rule_to_re(r"abc*def"), "abcxxxxdef")
+    assert re.fullmatch(prod.rule_to_re(r"abc\*def"), "abc*def")
+    assert re.fullmatch(prod.rule_to_re(r"abc\\def"), "abc\\def")
+    assert re.fullmatch(prod.rule_to_re(r"abc%def"), "abc111111122222def")
+    assert re.fullmatch(prod.rule_to_re(r"abc%%def"), "abc%def")
+    assert not re.fullmatch(prod.rule_to_re(r"abc%%def"), "abc%%def")
 
 
 def test_stem_error():
