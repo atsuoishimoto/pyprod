@@ -115,9 +115,15 @@ def glob(path, dir="."):
     return ret
 
 
-def iter_span(regex, text):
+def iter_path_span(text):
+    wildcard = r"(?P<wildcard>\*)"
+    backslash = r"(?P<backspash>\\.)"
+    stem = "%"
+    percent = "%%"
+    re_path = f"({wildcard}|{backslash}|{percent}|{stem})+?"
+
     begin = 0
-    for m in re.finditer(regex, text):
+    for m in re.finditer(re_path, text):
         s, e = m.span()
         if begin != s:
             yield text[begin:s]
@@ -127,16 +133,9 @@ def iter_span(regex, text):
         yield text[begin:]
 
 def _convert_rule_re(s_rule):
-    wildcard = r"(?P<wildcard>\*)"
-    #star = r"(?P<star>\\\*)"
-    backslash = r"(?P<backspash>\\.)"
-    stem = "%"
-    percent = "%%"
-
     ret = []
-    re_path = f"({wildcard}|{backslash}|{percent}|{stem})+?"
     num_percent = 0
-    for s in iter_span(re_path, s_rule):
+    for s in iter_path_span(s_rule):
         if s[0] == "\\":
             ret.append(re.escape(s[1]))
         elif s == "*":
@@ -198,9 +197,14 @@ def _check_pattern(pattern):
     if not len(singles):
         raise RuleError(f"{pattern}: Pattern should contain a '%'.")
 
+def _has_wildcard(path):
+    for s in iter_path_span(path):
+        if s == "*":
+            return True
+    return False
 
 def _check_wildcard(path):
-    if "*" in path:
+    if _has_wildcard(path):
         raise RuleError(f"{path}: '*' is not allowed")
 
 
@@ -253,7 +257,7 @@ class Rule:
                     continue
 
                 if not self.first_target:
-                    if "*" not in target:
+                    if not _has_wildcard(target):
                         if _check_pattern_count(target) == 0:
                             # not contain one %
                             self.first_target = target
