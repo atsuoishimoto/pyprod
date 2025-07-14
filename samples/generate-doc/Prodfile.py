@@ -1,15 +1,19 @@
 # ruff: NOQA
 # type: ignore
 
+"""
+Sample Prodfile.py to concatenate text files.
+"""
+
 DOC = "DOC.txt"
-SRCFILES = "a.txt b.txt c.txt".split()
+SRCFILES = ["a.txt", "b.txt", "c.txt"]
 BUILDDIR = Path("build")
-BUILDFILES = [(BUILDDIR / p).with_suffix(".o") for p in SRCFILES]
-COMMON = "inc1.txt inc2.txt".split()
+COMMON = ["inc1.txt", "inc2.txt"]
 
 
-@rule(DOC, depends=BUILDFILES)
+@rule(DOC, depends=(SRCFILES, COMMON))
 def build_app(target, *src):
+    """Builds target text"""
     run("cat", *src, ">", target)
 
 
@@ -18,14 +22,9 @@ def build_dir(target):
     run("mkdir -p", target)
 
 
-@rule(BUILDDIR / "%.o", depends=("%.txt", COMMON), uses=BUILDDIR)
-def build_c(target, src, *commons):
-    run("cat", *commons, src, ">", target)
-
-
 @task
 def clean():
-    run("rm", "-rf", BUILDDIR, BUILDFILES, DOC)
+    run("rm", "-rf", BUILDDIR, DOC)
 
 
 @task

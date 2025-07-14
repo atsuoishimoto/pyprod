@@ -103,6 +103,7 @@ def test_stem_escape():
     deps, _, _ = rules.select_builder("a.%")
     assert deps == ["a.%"]
 
+
 def test_rule_to_re():
     assert re.fullmatch(prod.rule_to_re(r"abc*def"), "abcxxxxdef")
     assert re.fullmatch(prod.rule_to_re(r"abc\*def"), "abc*def")

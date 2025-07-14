@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import sys
 from collections import defaultdict
-from collections.abc import Collection, Awaitable
+from collections.abc import Awaitable, Collection
 from dataclasses import dataclass, field
 from fnmatch import fnmatch, translate
 from functools import wraps
@@ -132,6 +132,7 @@ def iter_path_span(text):
     if begin != len(text):
         yield text[begin:]
 
+
 def _convert_rule_re(s_rule):
     ret = []
     num_percent = 0
@@ -150,6 +151,7 @@ def _convert_rule_re(s_rule):
         else:
             ret.append(re.escape(s))
     return "".join(ret)
+
 
 def rule_to_re(rule):
     if not isinstance(rule, (str, Path)):
@@ -197,11 +199,13 @@ def _check_pattern(pattern):
     if not len(singles):
         raise RuleError(f"{pattern}: Pattern should contain a '%'.")
 
+
 def _has_wildcard(path):
     for s in iter_path_span(path):
         if s == "*":
             return True
     return False
+
 
 def _check_wildcard(path):
     if _has_wildcard(path):
@@ -244,12 +248,16 @@ def _expand_glob(name):
 
 
 class Rule:
-    def __init__(self, targets, pattern=None, depends=(), uses=(), builder=None, doc=None):
+    def __init__(
+        self, targets, pattern=None, depends=(), uses=(), builder=None, doc=None
+    ):
         self.targets = []
         self.default = False
         self.first_target = None
+        self.org_targets = []
         if targets:
-            for target in flatten(targets):
+            self.org_targets = list(flatten(targets))
+            for target in self.org_targets:
                 if not target:
                     continue
                 target = str(target)
@@ -296,15 +304,30 @@ class Rule:
             self.uses.append(use)
 
         self.builder = builder
-        self.doc = doc
-        if not self.doc and self.builder:
-            doc = getattr(self.builder, "__doc__", None)
-            if doc:
-                self.doc = doc
+        self.doc = None
+        if doc:
+            self.doc = doc
 
     def __call__(self, f):
         self.builder = f
         return f
+
+    def _get_doc_titles(self):
+        titles = [str(t) for t in self.org_targets if isinstance(t, (str, Path))]
+        return titles
+
+    def _get_doc(self):
+        if self.doc:
+            return self.doc
+        if self.builder:
+            return self.builder.__doc__
+
+    def get_doc(self):
+        doc = self._get_doc()
+        if doc:
+            titles = self._get_doc_titles()
+            return titles, doc
+        return None, None
 
 
 class _TaskFunc:
@@ -354,6 +377,14 @@ class Task(Rule):
         self._set_funcname(f)
         return _TaskFunc(f, self.name)
 
+    def _get_doc_titles(self):
+        return [self.name]
+
+    def get_doc(self):
+        titles = self._get_doc_titles()
+        doc = self._get_doc()
+        return titles, doc
+
 
 class Rules:
     def __init__(self):
@@ -362,7 +393,9 @@ class Rules:
         self._detect_loop = set()
         self.frozen = False
 
-    def add_rule(self, targets, pattern=None, depends=(), uses=(), builder=None, doc=None):
+    def add_rule(
+        self, targets, pattern=None, depends=(), uses=(), builder=None, doc=None
+    ):
         if builder:
             if not callable(builder):
                 raise ValueError(f"{builder} is not callable")
@@ -496,6 +529,14 @@ class Rules:
 
         finally:
             self._detect_loop.remove(name)
+
+    def get_docs(self):
+        ret = []
+        for rule in self.rules:
+            titles, doc = rule.get_doc()
+            if titles or doc:
+                ret.append((titles, doc))
+        return ret
 
 
 class Checkers:
@@ -720,6 +761,13 @@ class Prod:
     def get_default_target(self):
         return self.rules.select_first_target()
 
+    def get_module_doc(self):
+        doc = self.module.__doc__
+        return doc or ""
+
+    def get_docs(self):
+        return self.rules.get_docs()
+
     async def start(self, deps):
         self.loop = asyncio.get_running_loop()
         self.built = 0
@@ -737,6 +785,7 @@ class Prod:
         waits = []
         for dep in deps:
             if dep not in self.buildings:
+
                 async def call_run(dep):
                     ts = await self.run(dep)
                     self.buildings[dep] = ts

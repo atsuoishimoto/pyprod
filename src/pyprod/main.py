@@ -3,10 +3,12 @@ import asyncio
 import logging
 import os
 import sys
+import textwrap
 import threading
 import time
-from pathlib import Path
 from itertools import chain
+from pathlib import Path
+
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -28,6 +30,14 @@ parser.add_argument(
 
 parser.add_argument(
     "-f", "--file", help="Use FILE as the Prodfile (default: 'Prodfile.py')"
+)
+
+parser.add_argument(
+    "-d",
+    "--doc",
+    dest="showdoc",
+    action="store_true",
+    help="Show Prodfile documentation",
 )
 
 parser.add_argument(
@@ -147,6 +157,10 @@ def main():
     else:
         sys.exit("No make module found")
 
+    if args.showdoc:
+        show_doc(mod)
+        sys.exit(0)
+
     params = {}
     targets = []
 
@@ -197,3 +211,22 @@ def run(mod, job, params, targets):
         pass
     except Exception as e:
         print_exc(e)
+
+
+def show_doc(mod):
+    prod = pyprod.prod.Prod(mod, 1, {})
+    doc = prod.get_module_doc()
+    if doc:
+        print(doc.strip() + "\n")
+
+    doc = prod.get_module_doc()
+
+    lines = []
+    for titles, doc in prod.get_docs():
+        text = ", ".join(titles) + ":"
+        if doc:
+            doc = doc.lstrip("\n")
+            doc = textwrap.indent(textwrap.dedent(doc).rstrip(), " " * 4)
+            text = f"{text}\n{doc}"
+        lines.append(text)
+    print("\n\n".join(lines))

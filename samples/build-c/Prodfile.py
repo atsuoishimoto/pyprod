@@ -1,3 +1,7 @@
+"""
+Sample Prodfile for building a C program.
+"""
+
 # ruff: NOQA
 # type: ignore
 
@@ -10,6 +14,9 @@ OBJS = "hello.o main.o".split()
 
 @rule(APP, depends=OBJS)
 def link(target, *src):
+    """
+    Build executable
+    """
     run(CC, "-o", target, src)
 
 
@@ -20,9 +27,15 @@ def compile(target, src, *deps):
 
 @task
 def clean():
+    """
+    Remove the built files.
+    """
     run("rm", "-rf", OBJS, APP)
 
 
 @task
 def rebuild():
+    """
+    Clean and rebuild all files.
+    """
     build(clean, APP)
