@@ -364,39 +364,22 @@ Use the ``-d`` option to list all tasks and their documentation:
 .. code-block:: bash
 
     $ pyprod -d
-    
-    Prodfile.py
-    -----------
-    """Build configuration for my project"""
-    
-    Rules:
-    ------
-    %.o from %.c
-        Compile C source files to object files
-    
-    app from ['main.o', 'utils.o']
-        Link object files into executable
-    
-    Tasks:
-    ------
-    all (default)
-        Build everything
-    
-    clean
-        Remove build artifacts
-    
-    test
-        Run test suite
-    
-    deploy
-        Deploy application to production server
+    Sample Prodfile for building a C program.
+
+    hello.exe:
+        Build executable
+
+    clean:
+        Remove the built files.
+
+    rebuild:
+        Clean and rebuild all files.
 
 The ``-d`` option shows:
 
-- The Prodfile's module docstring
-- All rules with their patterns and docstrings
-- All tasks with their docstrings
-- Which task is the default
+- The Prodfile's module docstring at the top
+- All targets (both rules and tasks) with their docstrings
+- Simple, clean format for easy reading
 
 Add clear docstrings to make your build system self-documenting:
 
