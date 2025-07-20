@@ -166,6 +166,33 @@ In this quickstart, you've learned:
 4. **Shell Commands**: Use ``run()`` to execute any shell command
 5. **Dependency Tracking**: PyProd automatically knows when files need rebuilding
 
+Understanding Tasks vs Rules
+----------------------------
+
+PyProd has two main decorators with different purposes:
+
+**@task** - For standalone operations without file dependencies:
+  - Runs every time when called
+  - Examples: clean, test, deploy, install
+  - Like Make's .PHONY targets
+
+**@rule** - For file transformations with dependency tracking:
+  - Only runs when output is older than inputs
+  - Tracks file timestamps automatically
+  - Examples: compile .c to .o, convert .md to .html
+
+.. code-block:: python
+
+    # Task: Always runs when called
+    @task
+    def test():
+        run("pytest")  # Runs every time
+
+    # Rule: Only runs if output.txt is older than input.txt
+    @rule("output.txt", depends="input.txt")
+    def process(target, source):
+        # Only runs when needed
+
 Default Task
 ------------
 
@@ -174,18 +201,22 @@ You can set a default task that runs when no target is specified:
 .. code-block:: python
 
     # Prodfile.py
-    from pyprod import task, set_default
+    from pyprod import task
 
-    @task
+    @task(default=True)
     def build():
         """Default build task"""
         print("Building project...")
         # Your build logic here
 
-    # Set as default
-    set_default("build")
+    @task
+    def clean():
+        """Clean build artifacts"""
+        run("rm", "-rf", "build/")
 
 Now just running ``pyprod`` will execute the build task.
+
+If no task has ``default=True``, PyProd will use the first defined target as the default.
 
 Next Steps
 ----------
