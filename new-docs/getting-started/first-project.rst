@@ -13,13 +13,15 @@ We'll create a static site generator with these features:
 * Convert Markdown files to HTML
 * Apply a template to all pages
 * Generate a sitemap
-* Optimize images
+* Copy images alongside content
 * Watch for changes and auto-rebuild
 
 This project will showcase:
 
 - File pattern rules
 - Multiple dependencies
+- Automatic package installation with pip()
+- Order-only dependencies with uses
 - Custom Python logic
 - Parallel builds
 - Watch mode
@@ -35,12 +37,15 @@ Let's start by creating our project directory:
     cd my-site
     
     # Create directories
-    mkdir -p src/pages src/images templates build
+    mkdir -p src/pages templates
 
     # Create some sample files
     echo "# Welcome" > src/pages/index.md
     echo "# About Us" > src/pages/about.md
     echo "<html><body>{{ content }}</body></html>" > templates/base.html
+    
+    # Add an image to the pages directory
+    # (In real project, add your .jpg files to src/pages/)
 
 Creating the Prodfile
 ---------------------
@@ -51,9 +56,13 @@ Create a ``Prodfile.py`` in your project root:
 
     # Prodfile.py
     import os
-    import markdown
     from pathlib import Path
-    from pyprod import rule, task, run, glob
+    from pyprod import rule, task, run, glob, pip
+
+    # Auto-install required packages
+    # PyProd will automatically install 'markdown' if it's not already installed
+    pip("markdown")
+    import markdown
 
     # Configuration
     SRC_DIR = "src"
@@ -88,11 +97,9 @@ Create a ``Prodfile.py`` in your project root:
         
         print(f"✓ Generated {target}")
 
-    @rule("build/images/%.jpg", depends="src/images/%.jpg", uses=BUILD_DIR)
-    def optimize_image(target, source):
-        """Copy and optimize images"""
-        # Create subdirectory if needed
-        os.makedirs(os.path.dirname(target), exist_ok=True)
+    @rule("build/pages/%.jpg", depends="src/pages/%.jpg", uses=BUILD_DIR)
+    def copy_image(target, source):
+        """Copy images to build directory"""
         # For now, just copy. In real project, use Pillow to optimize
         run("cp", source, target)
         print(f"✓ Copied {target}")
@@ -118,12 +125,12 @@ Create a ``Prodfile.py`` in your project root:
         html_files = [f.replace('src/pages/', 'build/').replace('.md', '.html') 
                       for f in md_files]
         
-        # Find all images
-        images = glob("src/images/**/*.jpg")
-        optimized = [f.replace('src/', 'build/') for f in images]
+        # Find all images in pages directory
+        images = glob("src/pages/**/*.jpg")
+        copied_images = [f.replace('src/', 'build/') for f in images]
         
         # Build everything
-        targets = html_files + optimized
+        targets = html_files + copied_images
         if targets:
             run("pyprod", *targets)
         
@@ -184,17 +191,6 @@ Key difference from ``depends``:
     
     # uses: Ensures build/ exists but doesn't rebuild if build/ is touched
     @rule("output.html", depends="input.md", uses="build/")
-
-Installing Dependencies
------------------------
-
-Before running, install the required Python package:
-
-.. code-block:: bash
-
-    pip install markdown
-    # or with uv:
-    uv pip install markdown
 
 Running Your First Build
 ------------------------
@@ -349,9 +345,12 @@ Here's the complete Prodfile for reference:
 
     # Complete Prodfile.py
     import os
-    import markdown
     from pathlib import Path
-    from pyprod import rule, task, run, glob, check
+    from pyprod import rule, task, run, glob, check, pip
+
+    # Auto-install dependencies
+    pip("markdown")
+    import markdown
 
     # Configuration
     SRC_DIR = "src"
