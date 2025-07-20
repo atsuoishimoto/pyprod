@@ -487,11 +487,12 @@ class Rules:
     def select_first_target(self):
         first = None
         for dep in self.rules:
-            if dep.default and (not first):
-                first = dep.name
+            if dep.default:
+                return dep.name
 
-            if dep.first_target:
-                return dep.first_target
+            if not first:
+                if dep.first_target:
+                    first = dep.first_target
 
         return first
 
