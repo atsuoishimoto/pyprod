@@ -149,12 +149,6 @@ Create a ``Prodfile.py`` in your project root:
         print("Starting server at http://localhost:8000")
         run("python", "-m", "http.server", "8000", "--directory", BUILD_DIR)
 
-    @task
-    def watch():
-        """Watch for changes and rebuild"""
-        print("Watching for changes... Press Ctrl+C to stop")
-        run("pyprod", "-w", SRC_DIR, "build")
-
 Understanding the 'uses' Parameter
 ----------------------------------
 
@@ -246,7 +240,7 @@ PyProd can automatically rebuild when files change:
 .. code-block:: bash
 
     # In one terminal, start watch mode
-    $ pyprod watch
+    $ pyprod -w src build
     Watching for changes... Press Ctrl+C to stop
 
     # In another terminal, start the server
