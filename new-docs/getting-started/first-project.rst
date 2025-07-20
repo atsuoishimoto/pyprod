@@ -60,7 +60,7 @@ Create a ``Prodfile.py`` in your project root:
     from pyprod import rule, task, run, glob, pip, build
 
     # Auto-install required packages
-    # PyProd will automatically install 'markdown' if it's not already installed
+    # PyProd will automatically create venv and install 'markdown'
     pip("markdown")
     import markdown
 
