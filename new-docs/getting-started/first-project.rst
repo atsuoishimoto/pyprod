@@ -145,28 +145,6 @@ Create a ``Prodfile.py`` in your project root:
         print("Starting server at http://localhost:8000")
         run("python", "-m", "http.server", "8000", "--directory", BUILD_DIR)
 
-Using the build() Function
---------------------------
-
-PyProd provides a ``build()`` function to programmatically build targets:
-
-.. code-block:: python
-
-    from pyprod import build
-    
-    @task(default=True)
-    def all():
-        """Build all pages and assets"""
-        # Build multiple targets in one call
-        build(HTML_FILES, COPIED_CSS_FILES, SITE_MAP)
-
-The ``build()`` function:
-
-- Accepts multiple targets (lists or individual files)
-- Resolves dependencies automatically
-- Runs rules in the correct order
-- Supports parallel execution (respects -j flag)
-- Better than calling ``run("pyprod", ...)`` for internal builds
 
 Key Pattern: List-Based Targets with Static Pattern Rules
 ----------------------------------------------------------
@@ -247,6 +225,27 @@ Key difference from ``depends``:
     
     # uses: Ensures build/ exists but doesn't rebuild if build/ is touched
     @rule("output.html", depends="input.md", uses="build/")
+
+Using the build() Function
+--------------------------
+
+PyProd provides a ``build()`` function to schedule build targets:
+
+.. code-block:: python
+
+    from pyprod import build
+    
+    @task(default=True)
+    def all():
+        """Build all pages and assets"""
+        # Build multiple targets in one call
+        build(HTML_FILES, COPIED_CSS_FILES, SITE_MAP)
+
+The ``build()`` function:
+
+- Accepts multiple targets (lists or individual files)
+- Resolves dependencies automatically
+- Runs rules in the correct order
 
 Running Your First Build
 ------------------------
