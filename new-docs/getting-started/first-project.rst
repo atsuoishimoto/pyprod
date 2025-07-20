@@ -278,8 +278,7 @@ PyProd tracks dependencies intelligently. Try this:
 
     # Run build again - nothing happens!
     $ pyprod
-    build/index.html: up to date
-    build/about.html: up to date
+    Nothing to be done for ['all']
 
     # Modify a source file
     $ echo "# Welcome to My Site" > src/index.md
