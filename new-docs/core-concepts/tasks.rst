@@ -359,25 +359,22 @@ Tasks can interact with users:
 Task Discovery
 --------------
 
-List all available tasks:
+PyProd shows available targets when run with invalid target names or errors:
 
 .. code-block:: bash
 
-    $ pyprod -l
-    Available tasks:
-      all         Build everything (default)
-      clean       Remove build artifacts
-      test        Run test suite
-      deploy      Deploy to production
+    $ pyprod invalid_target
+    Error: Target 'invalid_target' not found
+    Available targets: all, clean, test, deploy
 
-Add descriptions to make tasks discoverable:
+Add clear docstrings to help users understand what each task does:
 
 .. code-block:: python
 
     @task
-    def secret_task():
-        """[INTERNAL] Don't show in help"""
-        # Tasks with [INTERNAL] in docstring can be hidden
+    def deploy():
+        """Deploy application to production server"""
+        # Clear docstrings help users understand task purpose
         pass
 
 Best Practices
