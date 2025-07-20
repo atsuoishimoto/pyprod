@@ -229,7 +229,7 @@ Key difference from ``depends``:
 Using the build() Function
 --------------------------
 
-PyProd provides a ``build()`` function to schedule build targets:
+PyProd provides a ``build()`` function to schedule targets for building:
 
 .. code-block:: python
 
@@ -238,14 +238,16 @@ PyProd provides a ``build()`` function to schedule build targets:
     @task(default=True)
     def all():
         """Build all pages and assets"""
-        # Build multiple targets in one call
+        # Schedule multiple targets to be built
         build(HTML_FILES, COPIED_CSS_FILES, SITE_MAP)
+        # Note: Actual building happens AFTER this task returns
 
 The ``build()`` function:
 
+- Schedules targets to be built (doesn't execute immediately)
 - Accepts multiple targets (lists or individual files)
 - Resolves dependencies automatically
-- Runs rules in the correct order
+- Execution happens after the current task completes
 
 Running Your First Build
 ------------------------

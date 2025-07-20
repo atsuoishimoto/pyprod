@@ -74,7 +74,7 @@ Call with: ``pyprod deploy -D ENV=production``
 Using the build() Function
 --------------------------
 
-Tasks often need to build other targets. Use ``build()`` instead of ``run("pyprod", ...)``:
+Tasks often need to build other targets. Use ``build()`` to schedule targets for building:
 
 .. code-block:: python
 
@@ -83,23 +83,29 @@ Tasks often need to build other targets. Use ``build()`` instead of ``run("pypro
     @task(default=True)
     def all():
         """Build everything"""
-        # Build specific targets
+        # Schedule specific targets to be built
         build("app.exe", "docs/manual.pdf")
         
-        # Build lists of targets
+        # Schedule lists of targets
         build(HTML_FILES, CSS_FILES)
         
-        # Build other tasks
+        # Schedule other tasks
         build("test")
+        
+        # Note: build() only schedules - execution happens after the task returns
 
     @task
     def release():
         """Create a release"""
-        # Ensure everything is built and tested
+        # Schedule builds - these will execute AFTER this task completes
         build("all", "test")
         
-        # Then package
-        run("tar", "-czf", "release.tar.gz", "build/")
+        # This runs immediately, but might run before builds complete!
+        # run("tar", "-czf", "release.tar.gz", "build/")
+        
+        # Better: Create a separate task or rule that depends on built files
+
+Important: ``build()`` schedules targets but doesn't execute them immediately. The actual building happens after your task function returns. If you need to ensure targets are built before proceeding, create separate tasks or use rules with proper dependencies.
 
 Common Task Patterns
 --------------------
@@ -201,14 +207,14 @@ Deployment Tasks
             print("Error: No build directory. Run 'pyprod all' first.")
             return
         
-        # Run tests first
+        # Run tests first (immediate execution)
         try:
             run("pytest", "--tb=short")
         except Exception:
             print("Tests failed! Aborting deployment.")
             return
         
-        # Deploy
+        # Deploy (immediate execution)
         run("rsync", "-avz", "--delete", 
             "build/", "user@prod:/var/www/html/")
         
@@ -216,6 +222,13 @@ Deployment Tasks
         run("curl", "-X", "POST", 
             "https://api.slack.com/notify",
             "-d", "Deployment complete")
+    
+    # Better pattern: Use a rule for deployment that depends on built files
+    @rule("deployed.flag", depends=["app.exe", "tests.passed"])
+    def deploy_rule(target, app, tests):
+        """Deploy only after build and tests succeed"""
+        run("rsync", "-avz", "--delete", "build/", "user@prod:/var/www/html/")
+        Path(target).touch()  # Create flag file
 
 Task Organization
 -----------------
@@ -228,14 +241,17 @@ Group Related Tasks
     # === Build Tasks ===
     
     @task(default=True)
-    def build():
+    def build_all():
         """Build the project"""
+        # Schedule executables and libraries to be built
         build(EXECUTABLES, LIBRARIES)
     
     @task
     def rebuild():
         """Clean and build"""
-        build("clean", "build")
+        # Note: clean will run first, then build_all
+        # Both are scheduled, execution happens after task returns
+        build("clean", "build_all")
     
     # === Test Tasks ===
     
