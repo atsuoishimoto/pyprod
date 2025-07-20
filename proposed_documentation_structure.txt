@@ -1,0 +1,91 @@
+## Proposed Documentation Structure
+
+```
+docs/
+├── index.md                    # Landing page with quick overview
+├── getting-started/
+│   ├── installation.md         # Installation guide (pip, uv, from source)
+│   ├── quickstart.md          # 5-minute tutorial
+│   └── first-project.md       # Building your first project with PyProd
+│
+├── core-concepts/
+│   ├── prodfile.md            # Understanding Prodfile.py
+│   ├── rules.md               # @rule decorator and pattern matching
+│   ├── tasks.md               # @task decorator for standalone operations
+│   ├── checks.md              # @check decorator for custom dependencies
+│   └── dependencies.md        # How dependency resolution works
+│
+├── user-guide/
+│   ├── basic-usage.md         # Common build scenarios
+│   ├── pattern-matching.md    # Advanced pattern rules (%.o, %.c)
+│   ├── parallel-builds.md     # Using -j for concurrent execution
+│   ├── watch-mode.md          # Auto-rebuild on file changes
+│   ├── debugging.md           # Debugging build issues
+│   └── best-practices.md      # Recommended patterns and practices
+│
+├── cookbook/
+│   ├── c-cpp-projects.md      # Building C/C++ projects
+│   ├── python-projects.md     # Python packaging and distribution
+│   ├── documentation.md       # Building docs (Sphinx, MkDocs)
+│   ├── web-assets.md          # Compiling SCSS, TypeScript, etc.
+│   ├── docker-integration.md  # Building Docker images
+│   └── cloud-resources.md     # Working with S3, APIs, databases
+│
+├── advanced/
+│   ├── custom-checks.md       # Writing custom dependency checkers
+│   ├── dynamic-rules.md       # Programmatic rule generation
+│   ├── plugin-system.md       # Extending PyProd functionality
+│   ├── performance.md         # Optimization and caching strategies
+│   └── integration.md         # Integrating with CI/CD pipelines
+│
+├── reference/
+│   ├── cli.md                 # Command-line interface reference
+│   ├── api/
+│   │   ├── decorators.md      # @rule, @task, @check API
+│   │   ├── functions.md       # run(), glob(), etc.
+│   │   └── classes.md         # Job, Build, etc.
+│   ├── configuration.md       # Environment variables and settings
+│   └── prodfile-examples.md   # Complete Prodfile.py examples
+│
+├── migration/
+│   ├── from-make.md           # Migrating from Make/Makefile
+│   ├── from-cmake.md          # Migrating from CMake
+│   └── from-gradle.md         # Migrating from Gradle/Maven
+│
+└── contributing/
+    ├── development.md         # Setting up development environment
+    ├── architecture.md        # Internal architecture guide
+    └── release-process.md     # How releases are managed
+```
+
+## Key Documentation Principles
+
+### 1. **Progressive Disclosure**
+- Start with simple examples
+- Gradually introduce advanced features
+- Each section builds on previous knowledge
+
+### 2. **Task-Oriented Structure**
+- Focus on what users want to accomplish
+- Provide complete, working examples
+- Show common patterns and solutions
+
+### 3. **Clear Categories**
+- **Getting Started**: For new users (0-30 minutes)
+- **Core Concepts**: Understanding how PyProd works (30-60 minutes)
+- **User Guide**: Daily usage patterns
+- **Cookbook**: Specific solutions for common scenarios
+- **Advanced**: Power user features
+- **Reference**: Complete API documentation
+
+### 4. **Example-Driven**
+Each concept should include:
+- Brief explanation
+- Simple example
+- Real-world use case
+- Common pitfalls and solutions
+
+### 5. **Cross-References**
+- Link related topics
+- Provide "See also" sections
+- Include a comprehensive search function
