@@ -359,22 +359,72 @@ Tasks can interact with users:
 Task Discovery
 --------------
 
-PyProd shows available targets when run with invalid target names or errors:
+Use the ``-d`` option to list all tasks and their documentation:
 
 .. code-block:: bash
 
-    $ pyprod invalid_target
-    Error: Target 'invalid_target' not found
-    Available targets: all, clean, test, deploy
+    $ pyprod -d
+    
+    Prodfile.py
+    -----------
+    """Build configuration for my project"""
+    
+    Rules:
+    ------
+    %.o from %.c
+        Compile C source files to object files
+    
+    app from ['main.o', 'utils.o']
+        Link object files into executable
+    
+    Tasks:
+    ------
+    all (default)
+        Build everything
+    
+    clean
+        Remove build artifacts
+    
+    test
+        Run test suite
+    
+    deploy
+        Deploy application to production server
 
-Add clear docstrings to help users understand what each task does:
+The ``-d`` option shows:
+
+- The Prodfile's module docstring
+- All rules with their patterns and docstrings
+- All tasks with their docstrings
+- Which task is the default
+
+Add clear docstrings to make your build system self-documenting:
 
 .. code-block:: python
 
+    """My Project Build Configuration
+    
+    This Prodfile builds a C application with tests and deployment.
+    """
+    
+    @rule("%.o", depends="%.c")
+    def compile(target, source):
+        """Compile C source files to object files"""
+        run("gcc", "-c", source, "-o", target)
+    
+    @task(default=True)
+    def all():
+        """Build everything"""
+        build("app", "tests")
+    
     @task
     def deploy():
-        """Deploy application to production server"""
-        # Clear docstrings help users understand task purpose
+        """Deploy application to production server
+        
+        Requires SSH access to prod server.
+        Run tests first with: pyprod test
+        """
+        # Detailed docstrings help users understand requirements
         pass
 
 Best Practices

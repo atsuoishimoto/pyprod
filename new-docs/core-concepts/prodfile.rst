@@ -168,6 +168,36 @@ PyProd automatically creates and manages virtual environments:
         data = pd.read_csv("data.csv")
         # ... analysis code ...
 
+Self-Documenting Prodfiles
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Make your Prodfile self-documenting with the ``-d`` option:
+
+.. code-block:: python
+
+    """MyProject Build System
+    
+    This Prodfile builds our web application.
+    Run 'pyprod -d' to see all available tasks.
+    """
+    
+    @rule("%.min.js", depends="%.js")
+    def minify_js(target, source):
+        """Minify JavaScript files for production"""
+        run("terser", source, "-o", target)
+    
+    @task(default=True)
+    def build():
+        """Build the entire project"""
+        build(JS_FILES, CSS_FILES)
+
+Users can discover available tasks and rules:
+
+.. code-block:: bash
+
+    $ pyprod -d
+    # Shows Prodfile docstring, all rules, and all tasks
+
 Parameter Handling
 ~~~~~~~~~~~~~~~~~~
 
