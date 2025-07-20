@@ -60,6 +60,12 @@ Create a ``Prodfile.py`` in your project root:
     BUILD_DIR = "build"
     TEMPLATE = "templates/base.html"
 
+    # Rule to create the build directory
+    @rule(BUILD_DIR)
+    def create_build_dir(target):
+        """Create the build directory"""
+        os.makedirs(target, exist_ok=True)
+
     @rule("build/%.html", depends=["src/pages/%.md", TEMPLATE], uses=BUILD_DIR)
     def markdown_to_html(target, source, template):
         """Convert Markdown files to HTML"""
@@ -76,15 +82,17 @@ Create a ``Prodfile.py`` in your project root:
         
         final_html = template_content.replace("{{ content }}", html_content)
         
-        # Write output (directory is auto-created by uses=BUILD_DIR)
+        # Write output
         with open(target, 'w') as f:
             f.write(final_html)
         
         print(f"✓ Generated {target}")
 
-    @rule("build/images/%.jpg", depends="src/images/%.jpg", uses="build/images")
+    @rule("build/images/%.jpg", depends="src/images/%.jpg", uses=BUILD_DIR)
     def optimize_image(target, source):
         """Copy and optimize images"""
+        # Create subdirectory if needed
+        os.makedirs(os.path.dirname(target), exist_ok=True)
         # For now, just copy. In real project, use Pillow to optimize
         run("cp", source, target)
         print(f"✓ Copied {target}")
@@ -143,29 +151,39 @@ Create a ``Prodfile.py`` in your project root:
 Understanding the 'uses' Parameter
 ----------------------------------
 
-Notice the ``uses`` parameter in our rules? This is a PyProd feature that automatically
-creates directories before running the rule:
+Notice the ``uses`` parameter in our rules? This is PyProd's equivalent of Make's
+"order-only prerequisites". It specifies dependencies that must exist but whose
+timestamps don't trigger rebuilds:
 
 .. code-block:: python
 
+    # Define a rule to create the build directory
+    @rule(BUILD_DIR)
+    def create_build_dir(target):
+        os.makedirs(target, exist_ok=True)
+
+    # Use BUILD_DIR as an order-only dependency
     @rule("build/%.html", depends=["src/pages/%.md", TEMPLATE], uses=BUILD_DIR)
     def markdown_to_html(target, source, template):
-        # No need for os.makedirs() - PyProd creates BUILD_DIR automatically!
+        # BUILD_DIR will be created if it doesn't exist
+        # But changes to BUILD_DIR timestamp won't trigger rebuilds
 
 The ``uses`` parameter:
 
-- Accepts a directory path or list of paths
-- Creates directories before the rule runs
-- Eliminates repetitive ``os.makedirs()`` calls
-- Makes rules cleaner and less error-prone
+- Specifies dependencies that must exist before the rule runs
+- Does NOT trigger rebuilds when these dependencies change
+- Perfect for directories, tools, or other prerequisites
+- Equivalent to Make's order-only prerequisites (target: deps | order-only)
 
-You can specify exact subdirectories too:
+Key difference from ``depends``:
 
 .. code-block:: python
 
-    @rule("build/images/%.jpg", depends="src/images/%.jpg", uses="build/images")
-    def optimize_image(target, source):
-        # build/images directory is guaranteed to exist
+    # depends: Rebuilds if template.html is newer than output
+    @rule("output.html", depends="template.html")
+    
+    # uses: Ensures build/ exists but doesn't rebuild if build/ is touched
+    @rule("output.html", depends="input.md", uses="build/")
 
 Installing Dependencies
 -----------------------
@@ -340,8 +358,13 @@ Here's the complete Prodfile for reference:
     BUILD_DIR = "build"
     TEMPLATE = "templates/base.html"
 
-    # All rules and tasks from above, using 'uses' parameter
-    # to automatically create output directories
+    # Rule to create build directory
+    @rule(BUILD_DIR)
+    def create_build_dir(target):
+        os.makedirs(target, exist_ok=True)
+
+    # All other rules and tasks from above, using 'uses' parameter
+    # for order-only dependencies
 
     # Additional utility tasks
     @task
