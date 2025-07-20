@@ -148,32 +148,42 @@ External Libraries
 Advanced Patterns
 -----------------
 
-Multiple Prodfiles
-~~~~~~~~~~~~~~~~~~
+Organizing Large Prodfiles
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can split large builds across multiple files:
+For complex projects, organize your Prodfile with clear sections:
 
 .. code-block:: python
 
     # Prodfile.py
     from pathlib import Path
+    from pyprod import rule, task, run, glob, build
     
-    # Import rules from subdirectories
-    exec(open("src/Prodfile.py").read())
-    exec(open("docs/Prodfile.py").read())
-    exec(open("tests/Prodfile.py").read())
-
-Or use Python's import system:
-
-.. code-block:: python
-
-    # Prodfile.py
-    import sys
-    sys.path.insert(0, '.')
+    # ============= Configuration =============
+    SRC_DIR = Path("src")
+    BUILD_DIR = Path("build")
     
-    from build_rules.compilation import *
-    from build_rules.packaging import *
-    from build_rules.deployment import *
+    # ============= Compilation Rules =============
+    C_SOURCES = glob(SRC_DIR / "*.c")
+    OBJECTS = [(BUILD_DIR / f.with_suffix(".o").name) for f in C_SOURCES]
+    
+    @rule(OBJECTS, pattern=(BUILD_DIR / "%.o"), depends="src/%.c")
+    def compile(target, source):
+        run("gcc", "-c", source, "-o", target)
+    
+    # ============= Testing Tasks =============
+    @task
+    def test():
+        run("pytest")
+    
+    @task
+    def coverage():
+        run("pytest", "--cov=src")
+    
+    # ============= Build Tasks =============
+    @task(default=True)
+    def all():
+        build(OBJECTS, "app")
 
 Virtual Environment Management
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
