@@ -69,17 +69,21 @@ Create a ``Prodfile.py`` in your project root:
     BUILD_DIR = Path("build")
     TEMPLATE = "templates/base.html"
 
+    # Define all markdown -> HTML targets
+    MD_FILES = glob(SRC_DIR.glob("*.md"))
+    HTML_FILES = [(BUILD_DIR / f.with_suffix(".html").name) for f in MD_FILES]
+
+    # Define all image copy targets
+    IMAGE_FILES = glob(SRC_DIR.glob("*.jpg"))
+    COPIED_IMAGES = [(BUILD_DIR / f.name) for f in IMAGE_FILES]
+
     # Rule to create the build directory
     @rule(BUILD_DIR)
     def create_build_dir(target):
         """Create the build directory"""
         os.makedirs(target, exist_ok=True)
 
-    # Define all markdown -> HTML targets
-    MD_FILES = glob(SRC_DIR.glob("*.md"))
-    HTML_FILES = [(BUILD_DIR / f.with_suffix(".html").name) for f in MD_FILES]
-
-    @rule(HTML_FILES, depends=["src/%.md", TEMPLATE], uses=BUILD_DIR)
+    @rule(HTML_FILES, pattern=(BUILD_DIR / "%.html"), depends=["src/%.md", TEMPLATE], uses=BUILD_DIR)
     def markdown_to_html(target, source, template):
         """Convert Markdown files to HTML"""
         # Read markdown
@@ -101,11 +105,7 @@ Create a ``Prodfile.py`` in your project root:
         
         print(f"✓ Generated {target}")
 
-    # Define all image copy targets
-    IMAGE_FILES = glob(SRC_DIR.glob("*.jpg"))
-    COPIED_IMAGES = [(BUILD_DIR / f.name) for f in IMAGE_FILES]
-
-    @rule(COPIED_IMAGES, depends="src/%.jpg", uses=BUILD_DIR)
+    @rule(COPIED_IMAGES, pattern=(BUILD_DIR / "%"), depends=["src/%"], uses=BUILD_DIR)
     def copy_image(target, source):
         """Copy images to build directory"""
         # For now, just copy. In real project, use Pillow to optimize
@@ -144,8 +144,8 @@ Create a ``Prodfile.py`` in your project root:
         print("Starting server at http://localhost:8000")
         run("python", "-m", "http.server", "8000", "--directory", BUILD_DIR)
 
-Key Pattern: List-Based Targets
---------------------------------
+Key Pattern: List-Based Targets with Static Pattern Rules
+----------------------------------------------------------
 
 Notice how we define all targets upfront using glob and list comprehensions:
 
@@ -157,16 +157,35 @@ Notice how we define all targets upfront using glob and list comprehensions:
     # Define corresponding output files
     HTML_FILES = [(BUILD_DIR / f.with_suffix(".html").name) for f in MD_FILES]
     
-    # Register the rule for all files at once
-    @rule(HTML_FILES, depends=["src/%.md", TEMPLATE], uses=BUILD_DIR)
+    # Register the rule for all files at once with pattern
+    @rule(HTML_FILES, pattern=(BUILD_DIR / "%.html"), depends=["src/%.md", TEMPLATE], uses=BUILD_DIR)
+
+The ``pattern`` parameter is PyProd's equivalent of Make's Static Pattern Rules:
+
+- **Without pattern**: Each target in HTML_FILES would look for ``src/%.md``
+- **With pattern**: The ``%`` in the pattern is extracted from each target, then substituted into dependencies
+
+For example, if ``HTML_FILES`` contains ``build/index.html`` and ``build/about.html``:
+
+.. code-block:: text
+
+    Target: build/index.html
+    Pattern: build/%.html
+    Extracted: index
+    Dependency: src/index.md (from "src/%.md")
+    
+    Target: build/about.html  
+    Pattern: build/%.html
+    Extracted: about
+    Dependency: src/about.md (from "src/%.md")
 
 This pattern:
 
 - Automatically discovers all source files
-- Defines all output targets in one place
+- Correctly maps each output to its specific input
 - Makes the build system aware of all files upfront
 - Enables efficient parallel builds
-- Keeps the Prodfile clean and maintainable
+- Equivalent to Make's static pattern rules: ``$(TARGETS): %.html: %.md``
 
 Understanding the 'uses' Parameter
 ----------------------------------
@@ -292,7 +311,7 @@ Let's extend our Prodfile with more capabilities:
     SCSS_FILES = glob(SRC_DIR.glob("*.scss"))
     CSS_FILES = [(BUILD_DIR / f.with_suffix(".css").name) for f in SCSS_FILES]
     
-    @rule(CSS_FILES, depends="src/%.scss", uses=BUILD_DIR)
+    @rule(CSS_FILES, pattern=(BUILD_DIR / "%.css"), depends="src/%.scss", uses=BUILD_DIR)
     def compile_sass(target, source):
         """Compile SCSS to CSS"""
         run("sass", source, target)
@@ -385,12 +404,12 @@ Here's the complete Prodfile for reference:
     IMAGE_FILES = glob(SRC_DIR.glob("*.jpg"))
     COPIED_IMAGES = [(BUILD_DIR / f.name) for f in IMAGE_FILES]
 
-    # All rules use list-based targets for batch processing
-    @rule(HTML_FILES, depends=["src/%.md", TEMPLATE], uses=BUILD_DIR)
+    # All rules use list-based targets with patterns for correct dependency mapping
+    @rule(HTML_FILES, pattern=(BUILD_DIR / "%.html"), depends=["src/%.md", TEMPLATE], uses=BUILD_DIR)
     def markdown_to_html(target, source, template):
         # ... implementation ...
 
-    @rule(COPIED_IMAGES, depends="src/%.jpg", uses=BUILD_DIR)
+    @rule(COPIED_IMAGES, pattern=(BUILD_DIR / "%"), depends=["src/%"], uses=BUILD_DIR)
     def copy_image(target, source):
         # ... implementation ...
 
