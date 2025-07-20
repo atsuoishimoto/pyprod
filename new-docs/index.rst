@@ -34,13 +34,13 @@ Quick Example
 Documentation Sections
 ----------------------
 
-* :doc:`Getting Started <getting-started/installation>` - Installation and first steps
-* :doc:`Core Concepts <core-concepts/prodfile>` - Understanding PyProd fundamentals
-* :doc:`User Guide <user-guide/basic-usage>` - Day-to-day usage patterns
-* :doc:`Cookbook <cookbook/c-cpp-projects>` - Solutions for specific scenarios
-* :doc:`Advanced Topics <advanced/custom-checks>` - Power user features
-* :doc:`API Reference <reference/cli>` - Complete API documentation
-* :doc:`Migration Guides <migration/from-make>` - Switching from other build tools
+* `Getting Started <getting-started/installation.rst>`_ - Installation and first steps
+* `Core Concepts <core-concepts/prodfile.rst>`_ - Understanding PyProd fundamentals
+* `User Guide <user-guide/basic-usage.rst>`_ - Day-to-day usage patterns
+* `Cookbook <cookbook/c-cpp-projects.rst>`_ - Solutions for specific scenarios
+* `Advanced Topics <advanced/custom-checks.rst>`_ - Power user features
+* `API Reference <reference/cli.rst>`_ - Complete API documentation
+* `Migration Guides <migration/from-make.rst>`_ - Switching from other build tools
 
 Getting Help
 ------------
