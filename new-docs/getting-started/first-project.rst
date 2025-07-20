@@ -60,10 +60,7 @@ Create a ``Prodfile.py`` in your project root:
     BUILD_DIR = "build"
     TEMPLATE = "templates/base.html"
 
-    # Ensure build directory exists
-    os.makedirs(BUILD_DIR, exist_ok=True)
-
-    @rule("build/%.html", depends=["src/pages/%.md", TEMPLATE])
+    @rule("build/%.html", depends=["src/pages/%.md", TEMPLATE], uses=BUILD_DIR)
     def markdown_to_html(target, source, template):
         """Convert Markdown files to HTML"""
         # Read markdown
@@ -79,17 +76,15 @@ Create a ``Prodfile.py`` in your project root:
         
         final_html = template_content.replace("{{ content }}", html_content)
         
-        # Write output
-        os.makedirs(os.path.dirname(target), exist_ok=True)
+        # Write output (directory is auto-created by uses=BUILD_DIR)
         with open(target, 'w') as f:
             f.write(final_html)
         
         print(f"✓ Generated {target}")
 
-    @rule("build/images/%.jpg", depends="src/images/%.jpg")
+    @rule("build/images/%.jpg", depends="src/images/%.jpg", uses="build/images")
     def optimize_image(target, source):
         """Copy and optimize images"""
-        os.makedirs(os.path.dirname(target), exist_ok=True)
         # For now, just copy. In real project, use Pillow to optimize
         run("cp", source, target)
         print(f"✓ Copied {target}")
@@ -144,6 +139,33 @@ Create a ``Prodfile.py`` in your project root:
         """Watch for changes and rebuild"""
         print("Watching for changes... Press Ctrl+C to stop")
         run("pyprod", "-w", SRC_DIR, "build")
+
+Understanding the 'uses' Parameter
+----------------------------------
+
+Notice the ``uses`` parameter in our rules? This is a PyProd feature that automatically
+creates directories before running the rule:
+
+.. code-block:: python
+
+    @rule("build/%.html", depends=["src/pages/%.md", TEMPLATE], uses=BUILD_DIR)
+    def markdown_to_html(target, source, template):
+        # No need for os.makedirs() - PyProd creates BUILD_DIR automatically!
+
+The ``uses`` parameter:
+
+- Accepts a directory path or list of paths
+- Creates directories before the rule runs
+- Eliminates repetitive ``os.makedirs()`` calls
+- Makes rules cleaner and less error-prone
+
+You can specify exact subdirectories too:
+
+.. code-block:: python
+
+    @rule("build/images/%.jpg", depends="src/images/%.jpg", uses="build/images")
+    def optimize_image(target, source):
+        # build/images directory is guaranteed to exist
 
 Installing Dependencies
 -----------------------
@@ -318,7 +340,8 @@ Here's the complete Prodfile for reference:
     BUILD_DIR = "build"
     TEMPLATE = "templates/base.html"
 
-    # [Include all the rules and tasks from above]
+    # All rules and tasks from above, using 'uses' parameter
+    # to automatically create output directories
 
     # Additional utility tasks
     @task
