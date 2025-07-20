@@ -13,7 +13,7 @@ We'll create a static site generator with these features:
 * Convert Markdown files to HTML
 * Apply a template to all pages
 * Generate a sitemap
-* Copy images alongside content
+* Copy static assets (CSS files)
 * Watch for changes and auto-rebuild
 
 This project will showcase:
@@ -44,8 +44,8 @@ Let's start by creating our project directory:
     echo "# About Us" > src/about.md
     echo "<html><body>{{ content }}</body></html>" > templates/base.html
     
-    # Add an image to src directory
-    # (In real project, add your .jpg files to src/)
+    # Add a CSS to src directory
+    echo "" > src/sample.css
 
 Creating the Prodfile
 ---------------------
@@ -57,7 +57,7 @@ Create a ``Prodfile.py`` in your project root:
     # Prodfile.py
     import os
     from pathlib import Path
-    from pyprod import rule, task, run, glob, pip
+    from pyprod import rule, task, run, glob, pip, build
 
     # Auto-install required packages
     # PyProd will automatically install 'markdown' if it's not already installed
@@ -70,12 +70,16 @@ Create a ``Prodfile.py`` in your project root:
     TEMPLATE = "templates/base.html"
 
     # Define all markdown -> HTML targets
-    MD_FILES = glob(SRC_DIR.glob("*.md"))
+    # glob() accepts Path objects with glob patterns
+    MD_FILES = glob(SRC_DIR / "*.md")
     HTML_FILES = [(BUILD_DIR / f.with_suffix(".html").name) for f in MD_FILES]
 
-    # Define all image copy targets
-    IMAGE_FILES = glob(SRC_DIR.glob("*.jpg"))
-    COPIED_IMAGES = [(BUILD_DIR / f.name) for f in IMAGE_FILES]
+    # Define all CSS copy targets
+    CSS_FILES = glob(SRC_DIR / "*.css")
+    COPIED_CSS_FILES = [(BUILD_DIR / f.name) for f in CSS_FILES]
+
+    # Site map as a single target
+    SITE_MAP = BUILD_DIR / "sitemap.xml"
 
     # Rule to create the build directory
     @rule(BUILD_DIR)
@@ -89,30 +93,29 @@ Create a ``Prodfile.py`` in your project root:
         # Read markdown
         with open(source, 'r') as f:
             md_content = f.read()
-        
+    
         # Convert to HTML
         html_content = markdown.markdown(md_content)
-        
+    
         # Apply template
         with open(template, 'r') as f:
             template_content = f.read()
-        
+    
         final_html = template_content.replace("{{ content }}", html_content)
-        
+    
         # Write output
         with open(target, 'w') as f:
             f.write(final_html)
-        
+    
         print(f"✓ Generated {target}")
 
-    @rule(COPIED_IMAGES, pattern=(BUILD_DIR / "%"), depends=["src/%"], uses=BUILD_DIR)
-    def copy_image(target, source):
-        """Copy images to build directory"""
-        # For now, just copy. In real project, use Pillow to optimize
+    @rule(COPIED_CSS_FILES, pattern=(BUILD_DIR / "%"), depends=["src/%"], uses=BUILD_DIR)
+    def copy_css(target, source):
+        """Copy CSS to build directory"""
         run("cp", source, target)
         print(f"✓ Copied {target}")
 
-    @rule("build/sitemap.xml", depends=HTML_FILES, uses=BUILD_DIR)
+    @rule(SITE_MAP, depends=HTML_FILES, uses=BUILD_DIR)
     def sitemap(target, *html_files):
         """Generate sitemap.xml"""
         with open(target, 'w') as f:
@@ -125,12 +128,10 @@ Create a ``Prodfile.py`` in your project root:
         print("✓ Generated sitemap.xml")
 
     @task(default=True)
-    def build():
+    def all():
         """Build all pages and assets"""
-        # Build everything
-        targets = HTML_FILES + COPIED_IMAGES + [Path("build/sitemap.xml")]
-        if targets:
-            run("pyprod", *[str(t) for t in targets])
+        # Use build() function to build multiple targets
+        build(HTML_FILES, COPIED_CSS_FILES, SITE_MAP)
 
     @task
     def clean():
@@ -144,6 +145,29 @@ Create a ``Prodfile.py`` in your project root:
         print("Starting server at http://localhost:8000")
         run("python", "-m", "http.server", "8000", "--directory", BUILD_DIR)
 
+Using the build() Function
+--------------------------
+
+PyProd provides a ``build()`` function to programmatically build targets:
+
+.. code-block:: python
+
+    from pyprod import build
+    
+    @task(default=True)
+    def all():
+        """Build all pages and assets"""
+        # Build multiple targets in one call
+        build(HTML_FILES, COPIED_CSS_FILES, SITE_MAP)
+
+The ``build()`` function:
+
+- Accepts multiple targets (lists or individual files)
+- Resolves dependencies automatically
+- Runs rules in the correct order
+- Supports parallel execution (respects -j flag)
+- Better than calling ``run("pyprod", ...)`` for internal builds
+
 Key Pattern: List-Based Targets with Static Pattern Rules
 ----------------------------------------------------------
 
@@ -151,8 +175,8 @@ Notice how we define all targets upfront using glob and list comprehensions:
 
 .. code-block:: python
 
-    # Find all source files
-    MD_FILES = glob(SRC_DIR.glob("*.md"))
+    # Find all source files - glob() accepts Path with pattern
+    MD_FILES = glob(SRC_DIR / "*.md")
     
     # Define corresponding output files
     HTML_FILES = [(BUILD_DIR / f.with_suffix(".html").name) for f in MD_FILES]
@@ -308,7 +332,7 @@ Let's extend our Prodfile with more capabilities:
 .. code-block:: python
 
     # Define SCSS -> CSS targets
-    SCSS_FILES = glob(SRC_DIR.glob("*.scss"))
+    SCSS_FILES = glob(SRC_DIR / "*.scss")
     CSS_FILES = [(BUILD_DIR / f.with_suffix(".css").name) for f in SCSS_FILES]
     
     @rule(CSS_FILES, pattern=(BUILD_DIR / "%.css"), depends="src/%.scss", uses=BUILD_DIR)
@@ -319,7 +343,7 @@ Let's extend our Prodfile with more capabilities:
     @task
     def deploy():
         """Deploy to production"""
-        run("pyprod", "build")  # Ensure everything is built
+        build("all")  # Ensure everything is built
         run("rsync", "-avz", "--delete", 
             f"{BUILD_DIR}/", "user@server:/var/www/html/")
         print("✓ Deployed to production")
@@ -341,97 +365,6 @@ Let's extend our Prodfile with more capabilities:
         with open(target, 'w') as f:
             f.write(response.text)
 
-Best Practices
---------------
-
-1. **Organize your Prodfile**: For larger projects, split into multiple files:
-
-   .. code-block:: python
-
-       # Prodfile.py
-       from build_rules import *
-       from deploy_tasks import *
-
-2. **Use variables for paths**: Makes maintenance easier:
-
-   .. code-block:: python
-
-       SOURCES = glob("src/**/*.md")
-       TARGETS = [s.replace('src/', 'build/').replace('.md', '.html') 
-                  for s in SOURCES]
-
-3. **Add progress indicators**: Helpful for long builds:
-
-   .. code-block:: python
-
-       @rule("%.min.js", depends="%.js")
-       def minify_js(target, source):
-           print(f"Minifying {source}...")
-           run("terser", source, "-o", target)
-           size_before = os.path.getsize(source)
-           size_after = os.path.getsize(target)
-           print(f"✓ Reduced by {(1 - size_after/size_before) * 100:.1f}%")
-
-Complete Example
-----------------
-
-Here's the complete Prodfile for reference:
-
-.. code-block:: python
-
-    # Complete Prodfile.py
-    import os
-    from pathlib import Path
-    from pyprod import rule, task, run, glob, check, pip
-
-    # Auto-install dependencies
-    pip("markdown")
-    import markdown
-
-    # Configuration
-    SRC_DIR = Path("src")
-    BUILD_DIR = Path("build")
-    TEMPLATE = "templates/base.html"
-
-    # Rule to create build directory
-    @rule(BUILD_DIR)
-    def create_build_dir(target):
-        os.makedirs(target, exist_ok=True)
-
-    # Define all targets upfront
-    MD_FILES = glob(SRC_DIR.glob("*.md"))
-    HTML_FILES = [(BUILD_DIR / f.with_suffix(".html").name) for f in MD_FILES]
-    IMAGE_FILES = glob(SRC_DIR.glob("*.jpg"))
-    COPIED_IMAGES = [(BUILD_DIR / f.name) for f in IMAGE_FILES]
-
-    # All rules use list-based targets with patterns for correct dependency mapping
-    @rule(HTML_FILES, pattern=(BUILD_DIR / "%.html"), depends=["src/%.md", TEMPLATE], uses=BUILD_DIR)
-    def markdown_to_html(target, source, template):
-        # ... implementation ...
-
-    @rule(COPIED_IMAGES, pattern=(BUILD_DIR / "%"), depends=["src/%"], uses=BUILD_DIR)
-    def copy_image(target, source):
-        # ... implementation ...
-
-    @rule("build/sitemap.xml", depends=HTML_FILES, uses=BUILD_DIR)
-    def sitemap(target, *html_files):
-        # ... implementation ...
-
-    # Additional utility tasks
-    @task
-    def stats():
-        """Show build statistics"""
-        html_files = list(BUILD_DIR.glob("*.html"))
-        total_size = sum(f.stat().st_size for f in html_files)
-        print(f"Built {len(html_files)} HTML files")
-        print(f"Total size: {total_size / 1024:.1f} KB")
-
-    @task
-    def validate():
-        """Validate HTML output"""
-        html_files = glob("build/*.html")
-        for html in html_files:
-            run("html-validate", html)
 
 Next Steps
 ----------
